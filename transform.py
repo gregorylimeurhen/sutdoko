@@ -1,7 +1,4 @@
-import json
-import os
-import sys
-
+import json, os, sys
 
 def main():
 	if len(sys.argv) != 2:
