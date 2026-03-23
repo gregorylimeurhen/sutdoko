@@ -17,8 +17,7 @@ Let `<` be a beginning-of-sequence (BOS) token, and `>` be an end-of-sequence (E
 1. Generate raw dataset from [Getting around SUTD](https://sutd.edu.sg/contact-us/getting-around-sutd) by scraping its HTML politely.
 2. Generate edge dataset `./data/edges.tsv` from raw dataset by writing each name and address canonically.
 3. Craft non-numerical and numerical substitution datasets `./data/nns.csv`, `./data/ns.csv`.
-4. Run `python ./data/make.py` to generate augmented pre-training and fine-tuning datasets `./data/names.txt`, `./data/addresses.txt`, `./data/n2A.txt`, `./data/a2N.txt` from `./data/edges.tsv`, `./data/nns.csv`, `./data/ns.csv`.
-5. Run `python ./data/make.py --no-augment` to generate only canonical datasets.
+4. Run `python ./data/make.py` to generate augmented (or `python ./data/make.py --no-augment` to generate non-augmented) pre-training and fine-tuning datasets `./data/names.txt`, `./data/addresses.txt`, `./data/n2A.txt`, `./data/a2N.txt` from `./data/edges.tsv`, `./data/nns.csv`, `./data/ns.csv`.
 
 | dataset                | training phase | row content |
 | ---------------------- | -------------- | ----------- |
