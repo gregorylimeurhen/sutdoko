@@ -1,3 +1,6 @@
+`edges`
+
+```tsv
 a c toh think tank 25	2.504
 academic media studio	2.710
 albert einstein meeting room	3.503
@@ -238,3 +241,71 @@ well-being services room	1.517
 wood store	5.101-01
 woodwork section	5.101-06
 wright brothers meeting room	3.505
+```
+
+`variants`
+
+```csv
+source, target
+"-", " "
+"-", " dash "
+"-", " hyphen "
+".", " dot "
+".", " point "
+"architecture and sustainable design", "asd"
+"at", "@"
+"career development centre", "cdc"
+"cohort classroom", "cc"
+"design and research in extreme systems", "dares"
+"digital manufacturing and design", "dmand"
+"digital systems", "ds"
+"engineering product development", "epd"
+"engineering systems and design", "esd"
+"facilities management", "fm"
+"fire command centre", "fcc"
+"graduate studies centre", "gsc"
+"humanities, arts, and social sciences", "hass"
+"industrial design", "ider"
+"information systems technology and design", "istd"
+"information technology", "it"
+"innovative digital arts", "idia"
+"learning environment for experimental technology", "leet"
+"lecture theatre", "lt"
+"lee kuan yew centre for innovative cities", "lkycic"
+"lee kuan yew", "lky"
+"opportunity laboratory", "o-lab"
+"opportunity", "o"
+"singapore management university", "smu"
+"singapore university of technology and design", "sutd"
+"student activity centre", "sac"
+"temasek laboratories", "tl"
+"think tank", "tt"
+"three-dimensional", "3d"
+"zhejiang university", "zju"
+"–", " "
+"–", "and"
+```
+
+`pretrain`
+
+```txt
+
+```
+
+`finetune`
+
+```txt
+
+```
+
+`val`
+
+```txt
+
+```
+
+`test`
+
+```txt
+
+```

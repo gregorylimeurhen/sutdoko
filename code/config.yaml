@@ -1,0 +1,4 @@
+dataset: "pretrain"
+architecture: "GPT2"
+metrics: ["NLS", "TTLT"]
+seed: 37
