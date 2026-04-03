@@ -341,7 +341,7 @@ characterisation laboratory
 chemical analytical design laboratory
 chemical synthesis laboratory
 chemistry and biology learning laboratory
-chemistrybiology learning laboratory
+chemistry biology learning laboratory
 chemistry–biology learning laboratory
 clean room
 cognition laboratory
@@ -381,12 +381,12 @@ dyson and singapore university of technology and design innovation studio 3
 dyson and sutd innovation studio 1
 dyson and sutd innovation studio 2
 dyson and sutd innovation studio 3
-dysonsingapore university of technology and design innovation studio 1
-dysonsingapore university of technology and design innovation studio 2
-dysonsingapore university of technology and design innovation studio 3
-dysonsutd innovation studio 1
-dysonsutd innovation studio 2
-dysonsutd innovation studio 3
+dyson singapore university of technology and design innovation studio 1
+dyson singapore university of technology and design innovation studio 2
+dyson singapore university of technology and design innovation studio 3
+dyson sutd innovation studio 1
+dyson sutd innovation studio 2
+dyson sutd innovation studio 3
 dyson–singapore university of technology and design innovation studio 1
 dyson–singapore university of technology and design innovation studio 2
 dyson–singapore university of technology and design innovation studio 3
@@ -497,6 +497,7 @@ nash living laboratory
 nikola tesla meeting room
 o dash lab
 o hyphen lab
+o lab
 o laboratory
 o-lab
 office of admissions
@@ -518,7 +519,6 @@ office of provost
 office of research
 office of strategic planning
 office of student administration
-olab
 opportunity laboratory
 optics design laboratory
 painting preparation centre
@@ -533,10 +533,10 @@ singapore university of technology and design and singapore management universit
 singapore university of technology and design and smu collaboration office
 singapore university of technology and design and zhejiang university collaboration office
 singapore university of technology and design and zju collaboration office
-singapore university of technology and designsingapore management university collaboration office
-singapore university of technology and designsmu collaboration office
-singapore university of technology and designzhejiang university collaboration office
-singapore university of technology and designzju collaboration office
+singapore university of technology and design singapore management university collaboration office
+singapore university of technology and design smu collaboration office
+singapore university of technology and design zhejiang university collaboration office
+singapore university of technology and design zju collaboration office
 singapore university of technology and design–singapore management university collaboration office
 singapore university of technology and design–smu collaboration office
 singapore university of technology and design–zhejiang university collaboration office
@@ -554,10 +554,10 @@ sutd and singapore management university collaboration office
 sutd and smu collaboration office
 sutd and zhejiang university collaboration office
 sutd and zju collaboration office
-sutdsingapore management university collaboration office
-sutdsmu collaboration office
-sutdzhejiang university collaboration office
-sutdzju collaboration office
+sutd singapore management university collaboration office
+sutd smu collaboration office
+sutd zhejiang university collaboration office
+sutd zju collaboration office
 sutd–singapore management university collaboration office
 sutd–smu collaboration office
 sutd–zhejiang university collaboration office
@@ -606,9 +606,9 @@ think tank 8
 think tank 9
 thomas edison meeting room
 three dash dimensional prototyping section
+three dimensional prototyping section
 three hyphen dimensional prototyping section
 three-dimensional prototyping section
-threedimensional prototyping section
 tl @ singapore university of technology and design
 tl @ sutd
 tl and itrust laboratory 1
@@ -650,10 +650,10 @@ tt 8
 tt 9
 urban cluster
 waiting room
+well being services room
 well dash being services room
 well hyphen being services room
 well-being services room
-wellbeing services room
 wood store
 woodwork section
 wright brothers meeting room
@@ -943,7 +943,7 @@ characterisation laboratory<2.615>
 chemical analytical design laboratory<3.507>
 chemical synthesis laboratory<3.508>
 chemistry and biology learning laboratory<2.512, 2.513>
-chemistrybiology learning laboratory<2.512, 2.513>
+chemistry biology learning laboratory<2.512, 2.513>
 chemistry–biology learning laboratory<2.512, 2.513>
 clean room<2.207>
 cognition laboratory<2.610>
@@ -983,12 +983,12 @@ dyson and singapore university of technology and design innovation studio 3<2.31
 dyson and sutd innovation studio 1<2.313a>
 dyson and sutd innovation studio 2<2.313b>
 dyson and sutd innovation studio 3<2.314>
-dysonsingapore university of technology and design innovation studio 1<2.313a>
-dysonsingapore university of technology and design innovation studio 2<2.313b>
-dysonsingapore university of technology and design innovation studio 3<2.314>
-dysonsutd innovation studio 1<2.313a>
-dysonsutd innovation studio 2<2.313b>
-dysonsutd innovation studio 3<2.314>
+dyson singapore university of technology and design innovation studio 1<2.313a>
+dyson singapore university of technology and design innovation studio 2<2.313b>
+dyson singapore university of technology and design innovation studio 3<2.314>
+dyson sutd innovation studio 1<2.313a>
+dyson sutd innovation studio 2<2.313b>
+dyson sutd innovation studio 3<2.314>
 dyson–singapore university of technology and design innovation studio 1<2.313a>
 dyson–singapore university of technology and design innovation studio 2<2.313b>
 dyson–singapore university of technology and design innovation studio 3<2.314>
@@ -1099,6 +1099,7 @@ nash living laboratory<2.611>
 nikola tesla meeting room<3.506>
 o dash lab<2.415>
 o hyphen lab<2.415>
+o lab<2.415>
 o laboratory<2.415>
 o-lab<2.415>
 office of admissions<3.201>
@@ -1120,7 +1121,6 @@ office of provost<3.701>
 office of research<3.502>
 office of strategic planning<3.601>
 office of student administration<3.201>
-olab<2.415>
 opportunity laboratory<2.415>
 optics design laboratory<3.412>
 painting preparation centre<5.101-16>
@@ -1135,10 +1135,10 @@ singapore university of technology and design and singapore management universit
 singapore university of technology and design and smu collaboration office<1.614>
 singapore university of technology and design and zhejiang university collaboration office<3.302>
 singapore university of technology and design and zju collaboration office<3.302>
-singapore university of technology and designsingapore management university collaboration office<1.614>
-singapore university of technology and designsmu collaboration office<1.614>
-singapore university of technology and designzhejiang university collaboration office<3.302>
-singapore university of technology and designzju collaboration office<3.302>
+singapore university of technology and design singapore management university collaboration office<1.614>
+singapore university of technology and design smu collaboration office<1.614>
+singapore university of technology and design zhejiang university collaboration office<3.302>
+singapore university of technology and design zju collaboration office<3.302>
 singapore university of technology and design–singapore management university collaboration office<1.614>
 singapore university of technology and design–smu collaboration office<1.614>
 singapore university of technology and design–zhejiang university collaboration office<3.302>
@@ -1156,10 +1156,10 @@ sutd and singapore management university collaboration office<1.614>
 sutd and smu collaboration office<1.614>
 sutd and zhejiang university collaboration office<3.302>
 sutd and zju collaboration office<3.302>
-sutdsingapore management university collaboration office<1.614>
-sutdsmu collaboration office<1.614>
-sutdzhejiang university collaboration office<3.302>
-sutdzju collaboration office<3.302>
+sutd singapore management university collaboration office<1.614>
+sutd smu collaboration office<1.614>
+sutd zhejiang university collaboration office<3.302>
+sutd zju collaboration office<3.302>
 sutd–singapore management university collaboration office<1.614>
 sutd–smu collaboration office<1.614>
 sutd–zhejiang university collaboration office<3.302>
@@ -1208,9 +1208,9 @@ think tank 8<1.410>
 think tank 9<1.415>
 thomas edison meeting room<3.402>
 three dash dimensional prototyping section<5.101-09>
+three dimensional prototyping section<5.101-09>
 three hyphen dimensional prototyping section<5.101-09>
 three-dimensional prototyping section<5.101-09>
-threedimensional prototyping section<5.101-09>
 tl @ singapore university of technology and design<2.701>
 tl @ sutd<2.701>
 tl and itrust laboratory 1<2.702>
@@ -1252,10 +1252,10 @@ tt 8<1.410>
 tt 9<1.415>
 urban cluster<2.601>
 waiting room<2.103>
+well being services room<1.517>
 well dash being services room<1.517>
 well hyphen being services room<1.517>
 well-being services room<1.517>
-wellbeing services room<1.517>
 wood store<5.101-01>
 woodwork section<5.101-06>
 wright brothers meeting room<3.505>
@@ -1305,8 +1305,8 @@ temasek laboratory and itrust laboratory 7<2.718>
 temasek laboratory and itrust laboratory 9<2.720>
 temasek laboratory at sutd<2.701>
 thin film characterization design laboratory<3.410>
-well hyphen being service room<1.517>
-wellbeing service room<1.517>
+well dash being service room<1.517>
+well-being service room<1.517>
 ```
 
 `test`
@@ -1352,7 +1352,7 @@ temasek laboratory and itrust laboratory 6<2.717>
 temasek laboratory and itrust laboratory 8<2.719>
 temasek laboratory at singapore university of technology and design<2.701>
 the writing center<2.414>
-well dash being service room<1.517>
-well-being service room<1.517>
+well being service room<1.517>
+well hyphen being service room<1.517>
 wright brother meeting room<3.505>
 ```

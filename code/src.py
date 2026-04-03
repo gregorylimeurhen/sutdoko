@@ -280,8 +280,8 @@ def parse_variants(section):
 	rows = []
 	reader = csv.DictReader(io.StringIO(section), skipinitialspace=True)
 	for row in reader:
-		source = row["source"].strip().strip('"')
-		target = row["target"].strip().strip('"')
+		source = row["source"].strip()
+		target = row["target"]
 		rows.append((source, target, variant_pattern(source)))
 	return rows
 
