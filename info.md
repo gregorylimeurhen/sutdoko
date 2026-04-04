@@ -35,12 +35,12 @@ where the value for:
 We log to W&B. We log a table of the form `id, config, scores, duration`
 where `id` is ID of the run,
 and `config` is the `config.yaml` of the run spread out compactly like
-e.g. `(dataset=..., architecture=..., metrics=..., seed=37)`,
-and `scores` looks like e.g. `(val_mean_nls=..., test_mean_nls=..., val_mean_ttlt=..., test_mean_ttlt=...)`,
+e.g. `(architecture=..., epochs=..., seed=...)`,
+and `scores` looks like e.g. `(val_mean_nls=..., test_mean_nls=...)`,
 and `duration` is the time taken from the start to the end of the run e.g. `1600`.
 
 `main.py` is the entry point that:
-- sets a run ID by taking the first 6 digits of the SHA-1 of the UNIX timestamp at the current time.
+- sets a run ID by taking the first 6 hex chars of SHA-1(current UNIX timestamp).
 - enforces reproducibility using the seed from `config.yaml`.
 - runs training (pre-training -> fine-tuning) with:
   - AdamW optimizer on default settings.
