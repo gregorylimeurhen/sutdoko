@@ -1,0 +1,9 @@
+\begin{thebibliography}{1}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Doe and Roe(2025)}]{example2025}
+John Doe and Jane Roe. 2025.
+\newblock An example paper.
+\newblock \emph{Journal of Examples}.
+
+\end{thebibliography}

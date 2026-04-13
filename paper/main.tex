@@ -1,0 +1,178 @@
+\documentclass{article}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage[scr=boondox]{mathalpha}
+\usepackage{mathtools}
+\usepackage{mleftright}
+\usepackage{physics}
+\usepackage{xcolor}
+\usepackage{xparse}
+
+\algrenewcomment[1]{{$\triangleright$\text{\ }\textit{#1}}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{notation}{Notation}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{claim}{Claim}
+\newtheorem{remark}{Remark}
+
+\usepackage{parskip}
+\makeatletter
+\def\thm@space@setup{\thm@preskip=\parskip \thm@postskip=0pt}
+\makeatother
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\R}{\mathbb{R}}
+
+\begin{document}
+
+\section{Methodology}
+
+% Read comments for developer (i.e. implementation) prose not in the paper please!
+% For brevity, we call a room name a "room", and a room address an "address"
+% Henceforth:
+% - all ties shall be broken uniform randomly, if any
+% - stuff (e.g. columns, keys, rows, values, etc.) shall be sorted lexicographically, if any
+
+Let $V$ be a vocabulary,
+and $N:V\to 2^{V}$ be a key neighbourhood,
+and $R\subseteq V^{*}$ be a room set,
+and $A\subseteq V^{*}$ be an address set,
+and $\varepsilon=0.2$ be an error rate,
+and $\mathrm{A}=100$ be an augmentation count.
+
+\begin{algorithm}[H]
+\caption{$\textsc{Corrupt}(\bm{x})$}
+\begin{algorithmic}
+	\For{$i\in[1..\abs{\bm{x}}]$}
+		\State $N\gets N(x_{i})$
+		\If{$N=\varnothing$}
+			\State $x'_{i}\gets x_{i}$
+		\Else
+			\State ${
+				x'_{i}
+				\sim
+				\varepsilon\,
+				\E_{n\sim\mathcal{U}(N)}[\delta(n)]
+				+
+				(1-\varepsilon)\,
+				\delta(x_{i})
+			}$
+		\EndIf
+	\EndFor
+	\State \Return $\bm{x}'$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+	\caption{$\textsc{Split}()$}
+	\begin{algorithmic}
+		\State $D_\mathrm{train}\gets\varnothing$
+		\State $D_\mathrm{test}\gets\varnothing$
+		\For{$r\in R$}
+			\State $P_\mathrm{train}\gets\varnothing$
+			\State $P_\mathrm{test}\gets\varnothing$
+			\While{$\abs{P_\mathrm{train}\cup P_\mathrm{test}}<100$}
+				\State $r'\sim\textsc{Corrupt}(r)$
+				\If{$(r',r)\notin P_\mathrm{train}\cup P_\mathrm{test}$}
+					\If{$\abs{P_\mathrm{train}}<80$}
+						\State $P_\mathrm{train}\gets P_\mathrm{train}\cup\{(r',r)\}$
+					\Else
+						\State $P_\mathrm{test}\gets P_\mathrm{test}\cup\{(r',r)\}$
+					\EndIf
+				\EndIf
+			\EndWhile
+			\State $D_\mathrm{train}\gets D_\mathrm{train}\cup P_\mathrm{train}$
+			\State $D_\mathrm{test}\gets D_\mathrm{test}\cup P_\mathrm{test}$
+		\EndFor
+		\State \Return $(D_\mathrm{train},D_\mathrm{test})$
+	\end{algorithmic}
+\end{algorithm}
+
+\begin{definition}[Denoiser]
+\begin{align*}
+	\mathscr{F}
+	&:
+	V^{*}\to R
+	\\
+	\mathscr{F}(x)
+	&=
+	\argmax_{r\in R}
+	\log\Pr(r\mid x)
+\end{align*}
+\end{definition}
+
+\begin{definition}[Lookup]
+$$
+	\mathscr{L}:R\to A
+$$
+\end{definition}
+
+% Edges map rooms to their addresses in the untouched `edges.tsv`
+% Because a room like `foo` can have multiple addresses like `A, B`,
+% we write a script `preprocess.py` to:
+% 1. generate `train.tsv` containing D_train and `test.tsv` containing D_test
+% by writing `corrupted	normal` pairs as rows
+% 2. convert `edges.tsv` to `n2a.tsv` with each row like `foo	A, B`
+% so look-up for `foo` yields `A, B`
+% The data is thus fixed after preprocessing
+
+The denoiser is a Nanochat-parameterised, character-level transformer with decoding constrained by the room trie.
+We use cross-entropy loss with the Adam optimiser.
+
+% Search the web for https://github.com/karpathy/nanochat
+% Everything is clean, default, and standard with no other stuffs:
+% - Training loss applied only to clean (target) portion
+% - Adam on default settings
+% - Batch size derived as largest batch that fits in memory
+% - Seed 0
+% - Nothing else, no dropout or whatever
+% We log to our `wandb` account (and delete the local folder)
+
+\begin{algorithm}[H]
+	\caption{$\textsc{Infer}(x)$}
+	\begin{algorithmic}
+		\State $x\gets\textsc{Strip}(x)$
+		\State $x\gets\textsc{Lowercase}(x)$
+		\If{$x\not\in R$}
+			\State $r\gets\mathscr{F}(x)$
+		\Else
+			\State $r\gets x$
+		\EndIf
+		\State $a\gets\mathscr{L}(r)$
+		\State \Return $a$
+	\end{algorithmic}
+\end{algorithm}
+
+\section{Experimentation}
+
+% We compare our method with the following online baselines
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{llll}
+		\toprule
+		Index & Denoiser & Accuracy (\%) & Mean Latency (s) \\
+		\midrule
+		1 & Identity & & \\
+		2 & Levenshtein & & \\
+		3 & Ours & & \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+% We evaluate each system on **fixed hardware** on the test set via accuracy and mean latency,
+% where accuracy is fraction of test inputs for which final address equals gold address,
+% and mean latency is mean wall-clock seconds from input to output
+
+\end{document}

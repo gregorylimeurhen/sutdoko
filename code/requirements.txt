@@ -1,4 +1,3 @@
 python-dotenv
-pyyaml
-tqdm
+torch
 wandb

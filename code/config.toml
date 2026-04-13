@@ -1,0 +1,6 @@
+[train]
+depth = 4
+epochs = 50
+
+[test]
+checkpoint = 10
