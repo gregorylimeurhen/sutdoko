@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1776074751.65675 "/Users/gregory/Code/mlops/paper/main.tex" "main.pdf" "main" 1776074752.22058 0
-  "/Users/gregory/Code/mlops/paper/main.tex" 1776074751.41939 5086 3d6ab7726f362167cf9ba5e9348fcf41 ""
+["pdflatex"] 1776081172.64178 "/Users/gregory/Code/mlops/paper/main.tex" "main.pdf" "main" 1776081173.22969 0
+  "/Users/gregory/Code/mlops/paper/main.tex" 1776081172.4085 5534 0286370f6bc9f006724c611d3927aae8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy7.tfm" 1246382020 1120 7f9f170e8aa57527ad6c49feafd45d54 ""
@@ -90,8 +90,8 @@
   "/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1730549341.22896 5467645 128b85b7cde5f5edc5cb7f1dd7ff8736 ""
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1730549328 8221427 932b9fba97f82e236a0a18d60cd10ac8 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
-  "main.aux" 1776074752.15503 623 74fbb49169b3492df98d22fa9cc7266c "pdflatex"
-  "main.tex" 1776074751.41939 5086 3d6ab7726f362167cf9ba5e9348fcf41 ""
+  "main.aux" 1776081173.17719 623 74fbb49169b3492df98d22fa9cc7266c "pdflatex"
+  "main.tex" 1776081172.4085 5534 0286370f6bc9f006724c611d3927aae8 ""
   (generated)
   "main.aux"
   "main.log"

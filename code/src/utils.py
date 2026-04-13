@@ -1,7 +1,8 @@
 import contextlib, dataclasses, datetime, importlib, json, pathlib, random, sys, tempfile, tomllib, zipfile
 import torch
 
-DATA_FILES = ["edges.tsv", "neighbors.json", "n2a.tsv", "test.tsv", "train.tsv"]
+DATA_FILES = ["dev.tsv", "edges.tsv", "neighbors.json", "n2a.tsv", "test.tsv", "train.tsv"]
+OPTIONAL_DATA_FILES = {"dev.tsv"}
 PAD_TOKEN = "<pad>"
 PROJECT_FILES = ["config.toml", "preprocess.py", "requirements.txt", "test.py", "train.py"]
 SEP_TOKEN = "<sep>"
@@ -71,7 +72,13 @@ def write_snapshot(path, source_root, project_root=None, data_overrides=None):
 	source_root = pathlib.Path(source_root)
 	with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
 		for name in DATA_FILES:
-			archive.write(data_overrides.get(name, source_root / "data" / name), f"data/{name}")
+			source = data_overrides.get(name, source_root / "data" / name)
+			if source.exists():
+				archive.write(source, f"data/{name}")
+				continue
+			if name in OPTIONAL_DATA_FILES:
+				continue
+			raise FileNotFoundError(source)
 		for source in sorted((source_root / "src").rglob("*")):
 			if source.is_file():
 				archive.write(source, source.relative_to(source_root))
@@ -116,12 +123,21 @@ def load_pairs(path):
 	return [{"input": normalize(left), "gold": normalize(right)} for left, right in load_tsv(path)]
 
 
+def load_split_rows(root, name):
+	return load_pairs(pathlib.Path(root) / "data" / f"{name}.tsv")
+
+
 def load_training_rows(root):
-	return load_pairs(pathlib.Path(root) / "data" / "train.tsv")
+	return load_split_rows(root, "train")
+
+
+def load_dev_rows(root):
+	path = pathlib.Path(root) / "data" / "dev.tsv"
+	return [] if not path.exists() else load_pairs(path)
 
 
 def load_test_rows(root):
-	return load_pairs(pathlib.Path(root) / "data" / "test.tsv")
+	return load_split_rows(root, "test")
 
 
 def load_room_lookup(root):

@@ -49,8 +49,8 @@ and $R\subseteq V^{*}$ be a room set,
 and $A\subseteq V^{*}$ be an address set,
 and $\varepsilon\in\R_{[0,1]}$ be a mutation rate,
 and $M\in\N$ be a mutation count,
-and $\alpha\in\R_{[0,1]}$ be a training fraction,
-and $\alpha M\in\N$.
+and $(\pi_\mathrm{train},\pi_\mathrm{dev},\pi_\mathrm{test})\in\Delta^{2}$ be a training-validation-testing split,
+and $\pi_\mathrm{train}M,\pi_\mathrm{dev}M,\pi_\mathrm{test}M\in\N$.
 
 \begin{algorithm}[H]
 \caption{$\textsc{Corrupt}(\bm{x})$}
@@ -79,16 +79,20 @@ and $\alpha M\in\N$.
 	\caption{$\textsc{Split}()$}
 	\begin{algorithmic}
 		\State $D_\mathrm{train}\gets\varnothing$
+		\State $D_\mathrm{dev}\gets\varnothing$
 		\State $D_\mathrm{test}\gets\varnothing$
 		\For{$r\in R$}
 			\State $P_\mathrm{train}\gets\varnothing$
+			\State $P_\mathrm{dev}\gets\varnothing$
 			\State $P_\mathrm{test}\gets\varnothing$
-			\While{$\abs{P_\mathrm{train}\cup P_\mathrm{test}}<M$}
+			\While{$\abs{P_\mathrm{train}\cup P_\mathrm{dev}\cup P_\mathrm{test}}<M$}
 				\State $r'\sim\textsc{Corrupt}(r)$
 				\If{$r'\neq r$}
-					\If{$(r',r)\notin P_\mathrm{train}\cup P_\mathrm{test}$}
-						\If{$\abs{P_\mathrm{train}}<\alpha M$}
+					\If{$(r',r)\notin P_\mathrm{train}\cup P_\mathrm{dev}\cup P_\mathrm{test}$}
+						\If{$\abs{P_\mathrm{train}}<\pi_\mathrm{train}M$}
 							\State $P_\mathrm{train}\gets P_\mathrm{train}\cup\{(r',r)\}$
+						\ElsIf{$\abs{P_\mathrm{dev}}<\pi_\mathrm{dev}M$}
+							\State $P_\mathrm{dev}\gets P_\mathrm{dev}\cup\{(r',r)\}$
 						\Else
 							\State $P_\mathrm{test}\gets P_\mathrm{test}\cup\{(r',r)\}$
 						\EndIf
@@ -96,9 +100,10 @@ and $\alpha M\in\N$.
 				\EndIf
 			\EndWhile
 			\State $D_\mathrm{train}\gets D_\mathrm{train}\cup P_\mathrm{train}$
+			\State $D_\mathrm{dev}\gets D_\mathrm{dev}\cup P_\mathrm{dev}$
 			\State $D_\mathrm{test}\gets D_\mathrm{test}\cup P_\mathrm{test}$
 		\EndFor
-		\State \Return $(D_\mathrm{train},D_\mathrm{test})$
+		\State \Return $(D_\mathrm{train},D_\mathrm{dev},D_\mathrm{test})$
 	\end{algorithmic}
 \end{algorithm}
 

@@ -1,11 +1,12 @@
 [preprocess]
-mutation_count = 500
+mutation_count = 50
 mutation_rate = 0.1
 training_fraction = 0.8
+dev_fraction = 0.1
 
 [train]
 depth = 4
 epochs = 50
 
 [test]
-run = T...
+run = "T3950"

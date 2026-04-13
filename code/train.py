@@ -14,6 +14,7 @@ def main():
 	config = src.utils.load_config(root, "train")
 	rows = src.utils.load_training_rows(root)
 	device = src.utils.device_for()
+	print(src.utils.device_for().type)
 	run_dir = src.utils.ensure_run_dir(root, "T")
 	src.utils.write_snapshot(run_dir / "snapshot.zip", root)
 	src.utils.set_seed(0)

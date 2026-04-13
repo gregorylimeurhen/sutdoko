@@ -17,6 +17,7 @@ def main():
 	root = pathlib.Path(__file__).resolve().parent
 	config = src.utils.load_config(root, "test")
 	device = src.utils.device_for()
+	print(src.utils.device_for().type)
 	run_dir = src.utils.ensure_run_dir(root, "E")
 	(run_dir / "results").mkdir(parents=True, exist_ok=True)
 	train_run_dir = root / "runs" / str(config["run"]).strip()

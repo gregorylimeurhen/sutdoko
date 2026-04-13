@@ -148,6 +148,10 @@ def load_checkpoint(path, device):
 	return model, tokenizer, list(state["rooms"])
 
 
+def is_cuda_oom(error, device):
+	return device.type == "cuda" and "out of memory" in str(error).lower()
+
+
 def can_fit_batch(model, examples, tokenizer, device):
 	input_ids = None
 	labels = None
@@ -159,7 +163,7 @@ def can_fit_batch(model, examples, tokenizer, device):
 		loss.backward()
 		return True
 	except RuntimeError as error:
-		if device.type != "cuda" or "out of memory" not in str(error).lower():
+		if not is_cuda_oom(error, device):
 			raise
 		return False
 	finally:
@@ -204,16 +208,34 @@ def train(model, rows, tokenizer, device, model_path, epochs, run):
 		total_loss = 0.0
 		total_steps = 0
 		src.utils.show_progress(f"train {epoch}/{epochs}", 0, len(order))
-		for start in range(0, len(order), batch_size):
+		start = 0
+		while start < len(order):
 			batch = [examples[index] for index in order[start:start + batch_size]]
-			input_ids, labels = src.utils.collate_examples(batch, tokenizer, device)
-			optimizer.zero_grad(set_to_none=True)
-			loss = model(input_ids, labels)
-			loss.backward()
-			optimizer.step()
-			total_loss += float(loss.item())
+			input_ids = None
+			labels = None
+			loss = None
+			loss_value = None
+			try:
+				input_ids, labels = src.utils.collate_examples(batch, tokenizer, device)
+				optimizer.zero_grad(set_to_none=True)
+				loss = model(input_ids, labels)
+				loss.backward()
+				optimizer.step()
+				loss_value = float(loss.item())
+			except RuntimeError as error:
+				if not is_cuda_oom(error, device) or batch_size == 1:
+					raise
+				optimizer.zero_grad(set_to_none=True)
+				model.zero_grad(set_to_none=True)
+				torch.cuda.empty_cache()
+				batch_size //= 2
+				continue
+			finally:
+				del input_ids, labels, loss
+			total_loss += loss_value
 			total_steps += 1
-			src.utils.show_progress(f"train {epoch}/{epochs}", min(start + len(batch), len(order)), len(order))
+			start += len(batch)
+			src.utils.show_progress(f"train {epoch}/{epochs}", start, len(order))
 		run.log({"epoch": epoch, "train_loss": total_loss / total_steps, "batch_size": batch_size})
 	src.utils.end_progress()
 	save_checkpoint(model_path, model, tokenizer, rooms)
