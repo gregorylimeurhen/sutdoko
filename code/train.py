@@ -1,37 +1,34 @@
-import pathlib, shutil, time
-import dotenv, wandb
-import src.models, src.utils
-
-
-def remove_wandb_dir(run_dir):
-	shutil.rmtree(run_dir / "wandb", ignore_errors=True)
+import dotenv
+import pathlib
+import utils
+import wandb
 
 
 def main():
-	start = time.time()
-	root = pathlib.Path(__file__).resolve().parent
-	dotenv.load_dotenv(root / ".env")
-	config = src.utils.load_config(root, "train")
-	rows = src.utils.load_training_rows(root)
-	device = src.utils.device_for()
-	print(src.utils.device_for().type)
-	run_dir = src.utils.ensure_run_dir(root, "T")
-	src.utils.write_snapshot(run_dir / "snapshot.zip", root)
-	src.utils.set_seed(0)
-	tokenizer = src.utils.build_tokenizer(root)
-	model = src.models.build_model(config["depth"], tokenizer, src.utils.rows_block_size(rows)).to(device)
-	try:
-		with wandb.init(
-			config=config,
-			dir=str(run_dir),
-			name=run_dir.name,
-			project="mlops",
-			settings=wandb.Settings(quiet=True, show_info=False, show_warnings=False, console="off"),
-		) as run:
-			batch_size = src.models.train(model, rows, tokenizer, device, run_dir / "model.pt", config["epochs"], run)
-			run.log({"batch_size": batch_size, "seconds": time.time() - start})
-	finally:
-		remove_wandb_dir(run_dir)
+	dir_ = pathlib.Path(__file__).resolve().parent
+	dotenv.load_dotenv(dir_.parent / ".env")
+	cfg = utils.load_config(dir_, "train")
+	seed = utils.load_seed(dir_)
+	train = utils.load_rows(dir_, "train")
+	val = utils.load_rows(dir_, "val")
+	dev = utils.device_for()
+	print(dev.type)
+	run_dir = utils.ensure_run_dir(dir_, "train")
+	utils.write_snapshot(run_dir / "snapshot.zip", dir_)
+	utils.set_seed(seed)
+	tok = utils.build_tokenizer(dir_)
+	train_size = utils.rows_block_size(train)
+	val_size = utils.rows_block_size(val)
+	block_size = max(train_size, val_size)
+	model = utils.build_model(cfg["depth"], tok, block_size).to(dev)
+	sets = wandb.Settings(quiet=True, show_info=False, show_warnings=False)
+	name = run_dir.parent.name
+	path = run_dir / "model.pt"
+	init = wandb.init
+	dir2 = str(run_dir)
+	run = init(config=cfg, dir=dir2, name=name, project="mlops", settings=sets)
+	with run:
+		utils.train(model, train, val, tok, dev, path, cfg["tolerance"], run, seed)
 
 
 if __name__ == "__main__":

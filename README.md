@@ -1,0 +1,5 @@
+# mlops
+
+```
+pip install .
+```

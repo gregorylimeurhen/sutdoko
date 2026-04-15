@@ -1,3 +1,11 @@
-__pycache__/
 .*
 !.gitignore
+__pycache__/
+code/runs/
+paper/*.aux
+paper/*.bbl
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.pdf
+paper/*.synctex.gz

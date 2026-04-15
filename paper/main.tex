@@ -6,15 +6,17 @@
 \usepackage{amsthm}
 \usepackage{bm}
 \usepackage{booktabs}
+\usepackage[a4paper, margin=1in]{geometry}
 \usepackage[scr=boondox]{mathalpha}
 \usepackage{mathtools}
 \usepackage{mleftright}
+\usepackage{parskip}
 \usepackage{physics}
 \usepackage{xcolor}
 \usepackage{xparse}
 
 \algrenewcomment[1]{{$\triangleright$\text{\ }\textit{#1}}}
-
+\setcounter{MaxMatrixCols}{30}
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
 \newtheorem{notation}{Notation}
@@ -23,7 +25,6 @@
 \newtheorem{claim}{Claim}
 \newtheorem{remark}{Remark}
 
-\usepackage{parskip}
 \makeatletter
 \def\thm@space@setup{\thm@preskip=\parskip \thm@postskip=0pt}
 \makeatother
@@ -47,63 +48,84 @@
 Let $V$ be a vocabulary,
 and $R\subseteq V^{*}$ be a room set,
 and $A\subseteq V^{*}$ be an address set,
-and $\varepsilon\in\R_{[0,1]}$ be a mutation rate,
-and $M\in\N$ be a mutation count,
-and $(\pi_\mathrm{train},\pi_\mathrm{dev},\pi_\mathrm{test})\in\Delta^{2}$ be a training-validation-testing split,
-and $\pi_\mathrm{train}M,\pi_\mathrm{dev}M,\pi_\mathrm{test}M\in\N$.
+and $B\subseteq V$ be a boundary set,
+and $C\in\N$ be a corruption count,
+and $\beta\in\R_{[0,1]}$ be a substitution rate,
+and $\alpha\in\R_{[0,1]}$ be a transposition rate,
+and $\bm{\pi}=(\pi_\mathrm{train},\pi_\mathrm{val},\pi_\mathrm{test})\in\Delta^{2}$ be a training-validation-testing split,
+and $C\bm{\pi}\in\N^{3}$.
+
+\begin{definition}[Keyboard]
+$$
+K
+=
+\begin{bmatrix}
+	\texttt{`} & & \texttt{1} & & \texttt{2} & & \texttt{3} & & \texttt{4} & & \texttt{5} & & \texttt{6} & & \texttt{7} & & \texttt{8} & & \texttt{9} & & \texttt{0} & & \texttt{-} & & \texttt{=}
+	\\
+	\texttt{q} & & \texttt{w} & & \texttt{e} & & \texttt{r} & & \texttt{t} & & \texttt{y} & & \texttt{u} & & \texttt{i} & & \texttt{o} & & \texttt{p} & & \texttt{[} & & \texttt{]} & & \texttt{\textbackslash}
+	\\
+	& & \texttt{a} & & \texttt{s} & & \texttt{d} & & \texttt{f} & & \texttt{g} & & \texttt{h} & & \texttt{j} & & \texttt{k} & & \texttt{l} & & \texttt{;} & & \texttt{'} & &
+	\\
+	& & & \texttt{z} & & \texttt{x} & & \texttt{c} & & \texttt{v} & & \texttt{b} & & \texttt{n} & & \texttt{m} & & \texttt{,} & & \texttt{.} & & \texttt{/} & & & &
+	\\
+	& & & & & & & & & & \textvisiblespace & \textvisiblespace & \textvisiblespace & \textvisiblespace & \textvisiblespace & & & & & & & & & &
+\end{bmatrix}
+$$
+\end{definition}
 
 \begin{algorithm}[H]
-\caption{$\textsc{Corrupt}(\bm{x})$}
-\begin{algorithmic}
-	\For{$i\in[1..\abs{\bm{x}}]$}
-		\State $N\gets\textsc{Neighbours}(x_{i})$
-		\If{$N=\varnothing$}
-			\State $x'_{i}\gets x_{i}$
-		\Else
-			\State ${
-				x'_{i}
-				\sim
-				\varepsilon\,
-				\E_{n\sim\mathcal{U}(N)}[\delta(n)]
-				+
-				(1-\varepsilon)\,
-				\delta(x_{i})
-			}$
+	\caption{$\textsc{Corrupt}(\bm{x})$}
+	\begin{algorithmic}
+		\State ${
+			T
+			\gets
+			\{
+				\bm{u}\bm{w}b\bm{v}\bm{z}
+				\mid
+				\bm{u}\in\{\bm{\epsilon}\}\cup V^{*}B,\,
+				\bm{z}\in\{\bm{\epsilon}\}\cup BV^{*},\,
+				\bm{v},\bm{w}\in (V\setminus B)^{+},\,
+				b\in B,\,
+				\bm{x}=\bm{u}\bm{v}b\bm{w}\bm{z}
+			\}
+			\setminus
+			\{\bm{x}\}
+		}$
+		\If{$T\neq\varnothing$}
+			${\bm{x}\sim\alpha\,\mathcal{U}(T)+(1-\alpha)\,\delta(\bm{x})}$
 		\EndIf
-	\EndFor
-	\State \Return $\bm{x}'$
-\end{algorithmic}
+		\For{$i\in[1..\abs{\bm{x}}]$}
+			\State $S\gets\{k\in K\setminus \{x_{i}\}\mid k-x_{i}\in[-1..1]\times[-2..2]\}$
+			\If{$S\neq\varnothing$}
+				${x_{i}\sim\beta\,\mathcal{U}(S)+(1-\beta)\,\delta(x_{i})}$
+			\EndIf
+		\EndFor
+		\State \Return $\bm{x}$
+	\end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[H]
 	\caption{$\textsc{Split}()$}
 	\begin{algorithmic}
 		\State $D_\mathrm{train}\gets\varnothing$
-		\State $D_\mathrm{dev}\gets\varnothing$
+		\State $D_\mathrm{val}\gets\varnothing$
 		\State $D_\mathrm{test}\gets\varnothing$
 		\For{$r\in R$}
-			\State $P_\mathrm{train}\gets\varnothing$
-			\State $P_\mathrm{dev}\gets\varnothing$
-			\State $P_\mathrm{test}\gets\varnothing$
-			\While{$\abs{P_\mathrm{train}\cup P_\mathrm{dev}\cup P_\mathrm{test}}<M$}
+			\State $P\gets\varnothing$
+			\While{$\abs{P}<C$}
 				\State $r'\sim\textsc{Corrupt}(r)$
 				\If{$r'\neq r$}
-					\If{$(r',r)\notin P_\mathrm{train}\cup P_\mathrm{dev}\cup P_\mathrm{test}$}
-						\If{$\abs{P_\mathrm{train}}<\pi_\mathrm{train}M$}
-							\State $P_\mathrm{train}\gets P_\mathrm{train}\cup\{(r',r)\}$
-						\ElsIf{$\abs{P_\mathrm{dev}}<\pi_\mathrm{dev}M$}
-							\State $P_\mathrm{dev}\gets P_\mathrm{dev}\cup\{(r',r)\}$
-						\Else
-							\State $P_\mathrm{test}\gets P_\mathrm{test}\cup\{(r',r)\}$
-						\EndIf
-					\EndIf
+					\State $P\gets P\cup\{(r',r)\}$
 				\EndIf
 			\EndWhile
+			\State $P_\mathrm{train}\sim\mathcal{U}(\{Q\subseteq P\mid \abs{Q}=\pi_\mathrm{train}C\})$
+			\State $P_\mathrm{val}\sim\mathcal{U}(\{Q\subseteq P\setminus P_\mathrm{train}\mid \abs{Q}=\pi_\mathrm{val}C\})$
+			\State $P_\mathrm{test}\gets P\setminus(P_\mathrm{train}\cup P_\mathrm{val})$
 			\State $D_\mathrm{train}\gets D_\mathrm{train}\cup P_\mathrm{train}$
-			\State $D_\mathrm{dev}\gets D_\mathrm{dev}\cup P_\mathrm{dev}$
+			\State $D_\mathrm{val}\gets D_\mathrm{val}\cup P_\mathrm{val}$
 			\State $D_\mathrm{test}\gets D_\mathrm{test}\cup P_\mathrm{test}$
 		\EndFor
-		\State \Return $(D_\mathrm{train},D_\mathrm{dev},D_\mathrm{test})$
+		\State \Return $(D_\mathrm{train},D_\mathrm{val},D_\mathrm{test})$
 	\end{algorithmic}
 \end{algorithm}
 
@@ -129,7 +151,7 @@ $$
 % Edges map rooms to their addresses in the untouched `edges.tsv`
 % Because a room like `foo` can have multiple addresses like `A, B`,
 % we write a script `preprocess.py` to:
-% 1. generate `train.tsv` containing D_train and `test.tsv` containing D_test
+% 1. generate `train.tsv` (for D_train), `val.tsv` (for D_val), `test.tsv` (for D_test)
 % by writing `corrupted	normal` pairs as rows
 % 2. convert `edges.tsv` to `n2a.tsv` with each row like `foo	A, B`
 % so look-up for `foo` yields `A, B`
@@ -146,7 +168,7 @@ We use cross-entropy loss with the Adam optimiser.
 % - Batch size derived as largest batch that fits in memory
 % - Seed 0
 % - Nothing else, no dropout or whatever
-% We log to our `wandb` account (and delete the local folder)
+% We log to our `wandb` account
 
 \begin{algorithm}[H]
 	\caption{$\textsc{Infer}(x)$}
@@ -165,8 +187,6 @@ We use cross-entropy loss with the Adam optimiser.
 
 \section{Experimentation}
 
-We set $\varepsilon=0.1$, and $M=500$, and $\alpha=0.8$.
-
 % We compare our method with the following online baselines
 
 \begin{table}[H]
@@ -177,7 +197,8 @@ We set $\varepsilon=0.1$, and $M=500$, and $\alpha=0.8$.
 		\midrule
 		1 & Identity & & \\
 		2 & Levenshtein & & \\
-		3 & Ours & & \\
+		3 & Damerau--Levenshtein & & \\
+		4 & Ours & & \\
 		\bottomrule
 	\end{tabular}
 \end{table}

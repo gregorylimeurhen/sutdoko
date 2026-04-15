@@ -1,12 +1,17 @@
+seed = 37
+
 [preprocess]
-mutation_count = 50
-mutation_rate = 0.1
-training_fraction = 0.8
-dev_fraction = 0.1
+corruption_count = 50
+data_split = [0.8, 0.1, 0.1]
+substitution_rate = 0.04
+transposition_rate = 0.5
 
 [train]
-depth = 4
-epochs = 50
+depth = 2
+tolerance = 100
 
 [test]
-run = "T3950"
+run = "0733"
+
+[export]
+run = "0733"

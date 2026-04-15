@@ -1,64 +1,112 @@
-import collections, fractions, pathlib, random
-import src.utils
+import collections
+import fractions
+import pathlib
+import utils
 
 
-def corrupt(text, neighbors, mutation_rate, rng):
-	return "".join(
-		neighbors[char][rng.randrange(len(neighbors[char]))] if neighbors[char] and rng.random() < mutation_rate else char
-		for char in text
-	)
+def transposition_options(text, boundaries):
+	options = []
+	for boundary_index, boundary in enumerate(text):
+		if boundary not in boundaries:
+			continue
+		left_start = boundary_index
+		while left_start > 0 and text[left_start - 1] not in boundaries:
+			left_start -= 1
+		right_end = boundary_index + 1
+		while right_end < len(text) and text[right_end] not in boundaries:
+			right_end += 1
+		if left_start == boundary_index or right_end == boundary_index + 1:
+			continue
+		left = text[:left_start]
+		mid = text[boundary_index + 1:right_end]
+		right = text[left_start:boundary_index]
+		tail = text[right_end:]
+		options.append(left + mid + boundary + right + tail)
+	return sorted(option for option in set(options) if option != text)
 
 
-def split_targets(mutation_count, training_fraction, dev_fraction):
-	dev_fraction = (1 - training_fraction) / 2 if dev_fraction is None else dev_fraction
-	train_target = fractions.Fraction(str(training_fraction)) * mutation_count
-	dev_target = fractions.Fraction(str(dev_fraction)) * mutation_count
-	test_target = fractions.Fraction(mutation_count) - train_target - dev_target
-	if min(train_target, dev_target, test_target) < 0:
+def transpose(text, options, transposition_rate, rng):
+	if not options or rng.random() >= transposition_rate:
+		return text
+	return options[rng.randrange(len(options))]
+
+
+def substitute(text, neighbors, substitution_rate, rng):
+	chars = []
+	for char in text:
+		options = neighbors.get(char, [])
+		if options and rng.random() < substitution_rate:
+			chars.append(options[rng.randrange(len(options))])
+			continue
+		chars.append(char)
+	return "".join(chars)
+
+
+def corrupt(text, bounds, nbrs, sub_rate, swap_rate, rng):
+	options = transposition_options(text, bounds)
+	text = transpose(text, options, swap_rate, rng)
+	return substitute(text, nbrs, sub_rate, rng)
+
+
+def split_targets(corruption_count, data_split):
+	train_fraction, val_fraction, test_fraction = data_split
+	train_target = fractions.Fraction(str(train_fraction)) * corruption_count
+	val_target = fractions.Fraction(str(val_fraction)) * corruption_count
+	test_target = fractions.Fraction(str(test_fraction)) * corruption_count
+	if min(train_target, val_target, test_target) < 0:
 		raise ValueError("split targets must be non-negative")
-	if train_target.denominator == dev_target.denominator == test_target.denominator == 1:
-		return int(train_target), int(dev_target)
+	if train_target + val_target + test_target != corruption_count:
+		raise ValueError("split targets must sum to corruption_count")
+	train_den = train_target.denominator
+	val_den = val_target.denominator
+	test_den = test_target.denominator
+	if train_den == val_den == test_den == 1:
+		return int(train_target), int(val_target), int(test_target)
 	raise ValueError("split targets must be integers")
 
 
-def split_rows(rooms, neighbors, mutation_count, mutation_rate, training_fraction, dev_fraction, rng):
+def split_rows(rooms, bounds, nbrs, count, sub_rate, swap_rate, split, rng):
 	train_rows = []
-	dev_rows = []
+	val_rows = []
 	test_rows = []
-	train_target, dev_target = split_targets(mutation_count, training_fraction, dev_fraction)
+	if not 0 <= sub_rate <= 1:
+		raise ValueError("substitution_rate must be in [0, 1]")
+	if not 0 <= swap_rate <= 1:
+		raise ValueError("transposition_rate must be in [0, 1]")
+	if count and sub_rate == 0 and swap_rate == 0:
+		msg = "substitution_rate or transposition_rate must be positive"
+		raise ValueError(msg)
+	train_target, val_target, test_target = split_targets(count, split)
 	for room in rooms:
-		seen = set()
-		train_pairs = set()
-		dev_pairs = set()
-		test_pairs = set()
-		while len(seen) < mutation_count:
-			pair = (corrupt(room, neighbors, mutation_rate, rng), room)
+		pairs = set()
+		while len(pairs) < count:
+			left = corrupt(room, bounds, nbrs, sub_rate, swap_rate, rng)
+			pair = left, room
 			if pair[0] == room:
 				continue
-			if pair in seen:
-				continue
-			seen.add(pair)
-			if len(train_pairs) < train_target:
-				train_pairs.add(pair)
-				continue
-			if len(dev_pairs) < dev_target:
-				dev_pairs.add(pair)
-				continue
-			test_pairs.add(pair)
-		train_rows.extend(train_pairs)
-		dev_rows.extend(dev_pairs)
+			pairs.add(pair)
+		pairs = sorted(pairs)
+		train_pairs = set(rng.sample(pairs, train_target))
+		remaining_pairs = [pair for pair in pairs if pair not in train_pairs]
+		val_pairs = set(rng.sample(remaining_pairs, val_target))
+		test_pairs = [pair for pair in remaining_pairs if pair not in val_pairs]
+		train_rows.extend(sorted(train_pairs))
+		val_rows.extend(sorted(val_pairs))
 		test_rows.extend(test_pairs)
 	train_rows.sort()
-	dev_rows.sort()
+	val_rows.sort()
 	test_rows.sort()
-	return train_rows, dev_rows, test_rows
+	return train_rows, val_rows, test_rows
 
 
 def lookup_rows(edges):
 	lookup = collections.defaultdict(set)
 	for room, address in edges:
 		lookup[room].add(address)
-	return [(room, ", ".join(sorted(addresses))) for room, addresses in sorted(lookup.items())]
+	rows = []
+	for room, addresses in sorted(lookup.items()):
+		rows.append((room, ", ".join(sorted(addresses))))
+	return rows
 
 
 def write_rows(path, rows):
@@ -66,25 +114,23 @@ def write_rows(path, rows):
 
 
 def main():
-	root = pathlib.Path(__file__).resolve().parent
-	rng = random.Random(0)
-	config = src.utils.load_config(root, "preprocess")
-	edges = src.utils.load_edges(root)
+	dir_ = pathlib.Path(__file__).resolve().parent
+	config = utils.load_config(dir_, "preprocess")
+	rng = utils.Rng(utils.load_seed(dir_))
+	bounds = utils.load_boundaries(dir_)
+	edges = utils.load_edges(dir_)
+	nbrs = utils.load_neighbors(dir_)
 	rooms = sorted({room for room, _ in edges})
-	neighbors = src.utils.load_neighbors(root)
-	train_rows, dev_rows, test_rows = split_rows(
-		rooms,
-		neighbors,
-		config["mutation_count"],
-		config["mutation_rate"],
-		config["training_fraction"],
-		config.get("dev_fraction"),
-		rng,
-	)
-	write_rows(root / "data" / "train.tsv", train_rows)
-	write_rows(root / "data" / "dev.tsv", dev_rows)
-	write_rows(root / "data" / "test.tsv", test_rows)
-	write_rows(root / "data" / "n2a.tsv", lookup_rows(edges))
+	count = config["corruption_count"]
+	sub = config["substitution_rate"]
+	swap = config["transposition_rate"]
+	parts = config["data_split"]
+	rows = split_rows(rooms, bounds, nbrs, count, sub, swap, parts, rng)
+	train_rows, val_rows, test_rows = rows
+	write_rows(dir_ / "data" / "train.tsv", train_rows)
+	write_rows(dir_ / "data" / "val.tsv", val_rows)
+	write_rows(dir_ / "data" / "test.tsv", test_rows)
+	write_rows(dir_ / "data" / "n2a.tsv", lookup_rows(edges))
 
 
 if __name__ == "__main__":

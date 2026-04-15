@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1"
+		>
+		<title>Room Lookup</title>
+		<style>
+			:root {
+				color: #111;
+				background: #f7f4ec;
+				font: 16px/1.4 Georgia, "Times New Roman", serif;
+			}
+
+			body {
+				margin: 0;
+			}
+
+			main {
+				max-width: 42rem;
+				margin: 0 auto;
+				padding: 2rem 1rem 3rem;
+			}
+
+			h1 {
+				margin: 0 0 0.5rem;
+				font-size: 2rem;
+			}
+
+			p {
+				margin: 0 0 1rem;
+			}
+
+			form {
+				display: grid;
+				gap: 0.75rem;
+			}
+
+			input,
+			button {
+				font: inherit;
+				padding: 0.75rem 0.9rem;
+				border: 1px solid #111;
+				border-radius: 0;
+				background: #fffdf8;
+				color: inherit;
+			}
+
+			button {
+				cursor: pointer;
+			}
+
+			pre {
+				margin: 1.5rem 0 0;
+				padding: 1rem;
+				border: 1px solid #111;
+				background: #fffdf8;
+				white-space: pre-wrap;
+				word-break: break-word;
+			}
+		</style>
+		<script defer src="./app.js"></script>
+	</head>
+	<body>
+		<main>
+			<h1>Room Lookup</h1>
+			<p id="status">Loading model assets.</p>
+			<form id="form">
+				<input
+					id="input"
+					autocomplete="off"
+					placeholder="Enter a room name"
+					spellcheck="false"
+				>
+				<button id="run" disabled type="submit">Find</button>
+			</form>
+			<pre id="out">Run code/export.py after training to create assets.</pre>
+		</main>
+	</body>
+</html>
