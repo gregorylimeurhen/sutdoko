@@ -7,11 +7,12 @@ substitution_rate = 0.05
 transposition_rate = 0.5
 
 [train]
+batch_size = 64
 depth = 2
 tolerance = 100
 
 [test]
-run = "5835"
+run = "5327"
 
 [export]
 run = "0733"

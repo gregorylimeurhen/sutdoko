@@ -634,21 +634,21 @@ def val_loss(model, examples, tok, dev, batch):
 	return total_loss / total_tokens, batch
 
 
-def train(model, train_rows, val_rows, tok, dev, path, tolerance, run, seed):
+def train(model, tr, va, tok, dev, path, tol, run, seed, batch=None):
 	train_xs = []
-	for row in train_rows:
+	for row in tr:
 		prompt = tok.encode_text(row["input"])
 		train_xs.append(encode(prompt, row["gold"], tok))
 	val_xs = []
-	for row in val_rows:
+	for row in va:
 		prompt = tok.encode_text(row["input"])
 		val_xs.append(encode(prompt, row["gold"], tok))
-	batch = largest_batch_size(model, train_xs, tok, dev)
+	if batch is None:
+		batch = largest_batch_size(model, train_xs, tok, dev)
+	else:
+		print(f"batch_size {batch}")
 	opt = torch.optim.AdamW(model.parameters())
-	patience = max(1, tolerance // 2)
-	make_sched = torch.optim.lr_scheduler.ReduceLROnPlateau
-	sched = make_sched(opt, factor=0.1, patience=patience)
-	rooms = sorted({row["gold"] for row in train_rows})
+	rooms = sorted({row["gold"] for row in tr})
 	path = pathlib.Path(path)
 	latest = path.with_name("latest.pt")
 	best_val = None
@@ -662,7 +662,6 @@ def train(model, train_rows, val_rows, tok, dev, path, tolerance, run, seed):
 			epoch += 1
 			loss, batch, norm = step(model, tx, tok, dev, opt, batch, epoch, seed)
 			current_val_loss, batch = val_loss(model, vx, tok, dev, batch)
-			sched.step(current_val_loss)
 			save_checkpoint(latest, model, tok, rooms)
 			if best_val is None or current_val_loss < best_val:
 				best_val = current_val_loss
@@ -673,7 +672,7 @@ def train(model, train_rows, val_rows, tok, dev, path, tolerance, run, seed):
 				"train_loss": loss,
 				"val_loss": current_val_loss,
 			})
-			if epoch - best_epoch >= tolerance:
+			if epoch - best_epoch >= tol:
 				break
 	except KeyboardInterrupt:
 		end_progress()

@@ -26,8 +26,10 @@ def main():
 	sets = wandb.Settings(quiet=True, show_info=False, show_warnings=False)
 	run = wandb.init(config=cfg, dir=rd, name=n, project="mlops", settings=sets)
 	with run:
+		batch = cfg.get("batch_size")
+		tol = cfg["tolerance"]
 		path = run_dir / "model.pt"
-		utils.train(model, train, val, tok, dev, path, cfg["tolerance"], run, seed)
+		utils.train(model, train, val, tok, dev, path, tol, run, seed, batch)
 
 
 if __name__ == "__main__":
