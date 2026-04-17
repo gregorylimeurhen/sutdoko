@@ -1,18 +1,22 @@
 {
   "identity": {
     "accuracy": 0.0,
-    "mean_latency": 1.1259751368520987e-06
-  },
-  "levenshtein": {
-    "accuracy": 0.725,
-    "mean_latency": 0.011858031168877561
+    "mean_latency": 5.900983254563201e-07
   },
   "damerau_levenshtein": {
     "accuracy": 0.7194444444444444,
-    "mean_latency": 0.02063413550721533
+    "mean_latency": 0.0170660854543611
+  },
+  "longest_common_prefix_length": {
+    "accuracy": 0.2916666666666667,
+    "mean_latency": 4.081202420854458e-05
+  },
+  "longest_common_substring_length": {
+    "accuracy": 0.4722222222222222,
+    "mean_latency": 0.007203276977277171
   },
   "ours": {
     "accuracy": 0.9731481481481481,
-    "mean_latency": 0.024991819180798267
+    "mean_latency": 0.008001150190183479
   }
 }

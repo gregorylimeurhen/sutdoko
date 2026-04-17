@@ -21,10 +21,12 @@ EOS_TOKEN = "<eos>"
 UNK_TOKEN = "<unk>"
 BASELINE_NAMES = [
 	"identity",
-	"levenshtein",
-	"damerau_levenshtein",
-	"longest_common_subsequence",
+	# "levenshtein",
+	"longest_common_prefix_length",
+	"longest_common_substring_length",
+	"whitespace_segment_histogram_intersection",
 	"character_histogram_intersection",
+	"damerau_levenshtein",
 	"ours"
 ]
 
@@ -781,6 +783,36 @@ def damerau_levenshtein_distance(left, right, max_distance=None):
 	return distance
 
 
+def longest_common_prefix_length(left, right, min_score=None):
+	score = 0
+	limit = min(len(left), len(right))
+	if min_score is not None and limit < min_score:
+		return -1
+	while score < limit and left[score] == right[score]:
+		score += 1
+	return score
+
+
+def longest_common_substring_length(left, right, min_score=None):
+	if len(left) < len(right):
+		left, right = right, left
+	if min_score is not None and len(right) < min_score:
+		return -1
+	best = 0
+	previous = [0] * (len(right) + 1)
+	for left_char in left:
+		current = [0]
+		for right_index, right_char in enumerate(right, start=1):
+			value = previous[right_index - 1] + 1
+			if left_char != right_char:
+				value = 0
+			if value > best:
+				best = value
+			current.append(value)
+		previous = current
+	return best
+
+
 def lcs_length(left, right, min_score=None):
 	if len(left) < len(right):
 		left, right = right, left
@@ -802,6 +834,13 @@ def lcs_length(left, right, min_score=None):
 	return previous[-1]
 
 
+def seg_hist(text):
+	hist = {}
+	for seg in text.split():
+		hist[seg] = hist.get(seg, 0) + 1
+	return hist
+
+
 def char_hist(text):
 	hist = {}
 	for char in text:
@@ -818,7 +857,7 @@ def hist_score(left, right, min_score=None):
 	return score
 
 
-def nearest_room_address(text, room_lookup, rooms, rng, distance_fn):
+def nearest_room(text, rooms, rng, distance_fn):
 	best_distance = None
 	best_rooms = []
 	for room in rooms:
@@ -829,11 +868,10 @@ def nearest_room_address(text, room_lookup, rooms, rng, distance_fn):
 			continue
 		if current_distance == best_distance:
 			best_rooms.append(room)
-	room = best_rooms[rng.randrange(len(best_rooms))]
-	return room_lookup[room]
+	return best_rooms[rng.randrange(len(best_rooms))]
 
 
-def best_room_address(text, room_lookup, rooms, rng, score_fn):
+def best_room(text, rooms, rng, score_fn):
 	best_score = None
 	best_rooms = []
 	for room in rooms:
@@ -844,8 +882,15 @@ def best_room_address(text, room_lookup, rooms, rng, score_fn):
 			continue
 		if current_score == best_score:
 			best_rooms.append(room)
-	room = best_rooms[rng.randrange(len(best_rooms))]
-	return room_lookup[room]
+	return best_rooms[rng.randrange(len(best_rooms))]
+
+
+def nearest_room_address(text, room_lookup, rooms, rng, distance_fn):
+	return room_lookup[nearest_room(text, rooms, rng, distance_fn)]
+
+
+def best_room_address(text, room_lookup, rooms, rng, score_fn):
+	return room_lookup[best_room(text, rooms, rng, score_fn)]
 
 
 def levenshtein_address(text, room_lookup, rooms, rng):
@@ -856,6 +901,16 @@ def levenshtein_address(text, room_lookup, rooms, rng):
 def damerau_levenshtein_address(text, room_lookup, rooms, rng):
 	fn = damerau_levenshtein_distance
 	return nearest_room_address(text, room_lookup, rooms, rng, fn)
+
+
+def longest_common_prefix_address(text, room_lookup, rooms, rng):
+	fn = longest_common_prefix_length
+	return best_room_address(text, room_lookup, rooms, rng, fn)
+
+
+def longest_common_substring_address(text, room_lookup, rooms, rng):
+	fn = longest_common_substring_length
+	return best_room_address(text, room_lookup, rooms, rng, fn)
 
 
 def lcs_address(text, room_lookup, rooms, rng):
@@ -879,29 +934,72 @@ def hist_address(text, room_lookup, room_hists, rng):
 	return room_lookup[room]
 
 
+def hist_room(text, room_hists, rng):
+	left = char_hist(text)
+	best_score = None
+	best_rooms = []
+	for room, right in room_hists:
+		score = hist_score(left, right, best_score)
+		if best_score is None or score > best_score:
+			best_score = score
+			best_rooms = [room]
+			continue
+		if score == best_score:
+			best_rooms.append(room)
+	return best_rooms[rng.randrange(len(best_rooms))]
+
+
+def seg_room(text, room_segs, rng):
+	left = seg_hist(text)
+	best_score = None
+	best_rooms = []
+	for room, right in room_segs:
+		score = hist_score(left, right, best_score)
+		if best_score is None or score > best_score:
+			best_score = score
+			best_rooms = [room]
+			continue
+		if score == best_score:
+			best_rooms.append(room)
+	return best_rooms[rng.randrange(len(best_rooms))]
+
+
 def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 	room_set = set(rooms)
 	trie = build_room_trie(rooms, tok)
-	lev_rng = Rng(seed)
-	dam_rng = Rng(seed)
-	lcs_rng = Rng(seed)
+	# lev_rng = Rng(seed)
+	pre_rng = Rng(seed)
+	sub_rng = Rng(seed)
+	seg_rng = Rng(seed)
 	hist_rng = Rng(seed)
+	dam_rng = Rng(seed)
 	ours_rng = Rng(seed)
+	damf = damerau_levenshtein_distance
+	pref = longest_common_prefix_length
+	subf = longest_common_substring_length
+	room_segs = [(room, seg_hist(room)) for room in rooms]
 	room_hists = [(room, char_hist(room)) for room in rooms]
 	preds = {}
-	preds["identity"] = lambda text: rm.get(text, "")
-	lev = levenshtein_address
-	dam = damerau_levenshtein_address
-	lcs = lcs_address
+	preds["identity"] = lambda text: text if text in room_set else ""
+	# lev = lambda text: nearest_room(text, rooms, lev_rng, levenshtein_distance)
+	pre = lambda text: best_room(text, rooms, pre_rng, pref)
+	sub = lambda text: best_room(text, rooms, sub_rng, subf)
+	seg = lambda text: seg_room(text, room_segs, seg_rng)
+	hist = lambda text: hist_room(text, room_hists, hist_rng)
+	dam = lambda text: nearest_room(text, rooms, dam_rng, damf)
 	pick = lambda text: predict_room(model, tok, dev, text, trie, ours_rng)
-	preds["levenshtein"] = lambda text: lev(text, rm, rooms, lev_rng)
-	name = "damerau_levenshtein"
-	preds[name] = lambda text: dam(text, rm, rooms, dam_rng)
-	name = "longest_common_subsequence"
-	preds[name] = lambda text: lcs(text, rm, rooms, lcs_rng)
+	# preds["levenshtein"] = lambda text: lev(text)
+	name = "longest_common_prefix_length"
+	preds[name] = lambda text: pre(text)
+	name = "longest_common_substring_length"
+	preds[name] = lambda text: sub(text)
+	name = "whitespace_segment_histogram_intersection"
+	preds[name] = lambda text: seg(text)
 	name = "character_histogram_intersection"
-	preds[name] = lambda text: hist_address(text, rm, room_hists, hist_rng)
-	preds["ours"] = lambda text: rm[text] if text in room_set else rm[pick(text)]
+	preds[name] = lambda text: hist(text)
+	name = "damerau_levenshtein"
+	preds[name] = lambda text: dam(text)
+	preds["ours"] = lambda text: text if text in room_set else pick(text)
 	stats = {name: {"correct": 0, "latency": 0.0} for name in BASELINE_NAMES}
 	show_progress("test", 0, len(rows))
 	for row_index, row in enumerate(rows, start=1):
@@ -910,8 +1008,9 @@ def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 		detail = {"input": text, "gold_room": row["gold"], "gold": gold_address}
 		for name in BASELINE_NAMES:
 			start = time.perf_counter()
-			prediction = preds[name](text)
+			pred_room = preds[name](text)
 			stats[name]["latency"] += time.perf_counter() - start
+			prediction = rm.get(pred_room, "")
 			stats[name]["correct"] += int(prediction == gold_address)
 			detail[name] = prediction
 		write(detail)

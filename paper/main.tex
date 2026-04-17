@@ -253,7 +253,10 @@ Finally, the algorithm returns the address.
 
 \section{Evaluation}
 
-Keeping the hardware and rest of the system fixed, we evaluated our denoiser against Levenshtein distance, Damerau--Levenshtein distance (DL), longest common subsequence length (LCS), and character histogram intersection (CH) denoisers,
+Keeping the hardware and rest of the system fixed, we evaluated our denoiser against
+Damerau--Levenshtein distance (DL),
+longest common substring length (LCS),
+and longest common prefix (LCP) denoisers,
 measuring the accuracy and mean latency of each denoiser on the test set.
 % We display the results with more natural units and scale, for your perusal
 
@@ -264,18 +267,20 @@ measuring the accuracy and mean latency of each denoiser on the test set.
 		\toprule
 		Denoiser & Accuracy (\%) & Mean Latency (ms) \\
 		\midrule
-		L & 72.5 & 9.05 \\
-		DL & 71.9 & 16.8 \\
-		LCS & 59.2 & 5.38 \\
-		CH & 37.1 & \textbf{0.289} \\
-		Ours & \textbf{97.3} & 7.88 \\
+		% I & 0.00 & 0.00590 \\
+		% L & 72.5 & 9.05 \\
+		DL & 71.9 & 17.1 \\
+		% LCS & 59.2 & 5.38 \\ % subsequence
+		LCS & 47.2 & 7.20 \\ % substring
+		LCP & 29.2 & 0.04 \\
+		% CH & 37.1 & \textbf{0.289} \\
+		Ours & \textbf{97.3} & 8.00 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-L captures insertions, deletions, and substitutions.
-DL extends L by capturing adjacent transpositions.
-LCS and CH capture ordered and unordered character overlap respectively.
+DL captures insertions, deletions, substitutions, and adjacent transpositions.
+% LCS and CH capture ordered and unordered character overlap respectively.
 Accuracy was measured using the fraction of test inputs for which final address equals gold address.
 Mean latency was measured using the mean time taken to get an output from giving an input.
 
@@ -296,7 +301,7 @@ Mean latency was measured using the mean time taken to get an output from giving
 		\If{$x\in R$}
 			\Return $(x,\mathscr{L}(x))$
 		\EndIf
-		\State ${
+		\State ${ % do not refer to this, I will amend this later
 			O
 			\gets
 			\bigcup_{

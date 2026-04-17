@@ -39,6 +39,16 @@ def latest_model(root=None):
 	raise RuntimeError("no experiments/runs/*/train/model.pt found")
 
 
+def configured_model():
+	root = experiments_root()
+	utils = load_utils()
+	run = int(utils.load_config(root, "build")["run"])
+	path = root / "runs" / f"{run}" / "train" / "model.pt"
+	if path.exists():
+		return path
+	raise RuntimeError(f"missing {path}")
+
+
 def dump_tensor(file, tensor, offset):
 	data = tensor.detach().cpu().float().contiguous()
 	blob = bytes(data.untyped_storage())
@@ -112,7 +122,7 @@ def export_model(model_path, out_dir):
 
 def parse_args():
 	parser = argparse.ArgumentParser()
-	model = latest_model()
+	model = configured_model()
 	parser.add_argument("model", nargs="?", default=str(model))
 	return parser.parse_args()
 

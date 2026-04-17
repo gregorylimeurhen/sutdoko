@@ -15,7 +15,6 @@ class Model {
 		this.keys = []
 		this.roomLookup = assets.room_lookup
 		this.rooms = assets.rooms
-		this.roomKeys = {}
 		this.roomRows = []
 		this.solveCache = new Map()
 		this.tok = assets.tokenizer
@@ -68,14 +67,10 @@ class Model {
 		this.keys.sort((left, right) => right.length - left.length)
 		for (const room of this.rooms) {
 			const key = this.normalize(room)
-			if (!this.roomKeys[key]) {
-				this.roomKeys[key] = []
-			}
-			this.roomKeys[key].push(room)
-			this.roomRows.push([room, key, this.charHist(key)])
-		}
-		for (const key of Object.keys(this.roomKeys)) {
-			this.roomKeys[key].sort((left, right) => left.localeCompare(right))
+			const ids = this.encodeText(room)
+			const segs = this.segHist(key)
+			const hist = this.charHist(key)
+			this.roomRows.push([room, key, ids, segs, hist])
 		}
 		for (const name of Object.keys(assets.tensors)) {
 			const info = assets.tensors[name]
@@ -221,6 +216,25 @@ class Model {
 			hist[char] = (hist[char] || 0) + 1
 		}
 		return hist
+	}
+
+	segHist(text) {
+		const hist = {}
+		for (const seg of text.split(/\s+/)) {
+			if (!seg) {
+				continue
+			}
+			hist[seg] = (hist[seg] || 0) + 1
+		}
+		return hist
+	}
+
+	histScore(left, right) {
+		let score = 0
+		for (const char of Object.keys(left)) {
+			score += Math.min(left[char], right[char] || 0)
+		}
+		return score
 	}
 
 	addInto(dst, src) {
@@ -582,14 +596,149 @@ class Model {
 		return rows
 	}
 
-	topRoomRows(rows, rev) {
-		rows.sort((left, right) => {
-			if (left[0] !== right[0]) {
-				return rev ? right[0] - left[0] : left[0] - right[0]
+	commonPrefix(left, right) {
+		const len = Math.min(left.length, right.length)
+		let i = 0
+		while (i < len && left[i] === right[i]) {
+			i += 1
+		}
+		return i
+	}
+
+	commonSubstring(left, right) {
+		if (right.length > left.length) {
+			[left, right] = [right, left]
+		}
+		let best = 0
+		let prev = Array(right.length + 1).fill(0)
+		for (let i = 1; i <= left.length; i += 1) {
+			const next = [0]
+			for (let j = 1; j <= right.length; j += 1) {
+				const hit = left[i - 1] === right[j - 1]
+				const value = hit ? prev[j - 1] + 1 : 0
+				next.push(value)
+				if (value > best) {
+					best = value
+				}
 			}
-			return left[1].localeCompare(right[1])
+			prev = next
+		}
+		return best
+	}
+
+	dominates(left, right, size) {
+		let better = false
+		for (let i = 0; i < size; i += 1) {
+			if (left[i] < right[i]) {
+				return false
+			}
+			better ||= left[i] > right[i]
+		}
+		return better
+	}
+
+	paretoLayer(rows, size) {
+		let out = []
+		for (let i = 0; i < rows.length; i += 1) {
+			let bad = false
+			for (let j = 0; j < rows.length; j += 1) {
+				if (i === j) {
+					continue
+				}
+				if (this.dominates(rows[j].vs, rows[i].vs, size)) {
+					bad = true
+					break
+				}
+			}
+			if (!bad) {
+				out.push(rows[i])
+			}
+		}
+		return out
+	}
+
+	sortLayer(rows, size) {
+		if (rows.length < 2) {
+			return
+		}
+		for (const row of rows) {
+			row.rank = 0
+		}
+		for (let i = 0; i < size; i += 1) {
+			let ys = rows.slice()
+			ys.sort((left, right) => {
+				if (left.vs[i] !== right.vs[i]) {
+					return right.vs[i] - left.vs[i]
+				}
+				return left.room.localeCompare(right.room)
+			})
+			let rank = 1
+			for (let j = 0; j < ys.length; j += 1) {
+				if (j && ys[j].vs[i] !== ys[j - 1].vs[i]) {
+					rank = j + 1
+				}
+				ys[j].rank += rank
+			}
+		}
+		rows.sort((left, right) => {
+			if (left.rank !== right.rank) {
+				return left.rank - right.rank
+			}
+			return left.room.localeCompare(right.room)
 		})
-		return rows.slice(0, 2).map(row => row[1])
+	}
+
+	roomScores(text, rows) {
+		const prefix = this.inputState(text)
+		const state = this.forwardToken(this.tok.sep_id, prefix.cache)
+		let root = {children: {}}
+		for (const row of rows) {
+			let node = root
+			for (const id of row.ids) {
+				let next = node.children[id]
+				if (!next) {
+					next = {children: {}}
+					node.children[id] = next
+				}
+				node = next
+			}
+			node.children[this.tok.eos_id] = {children: {}, room: row.room}
+		}
+		let todo = [root]
+		while (todo.length) {
+			const node = todo.pop()
+			node.allowed = Object.keys(node.children).map(Number)
+			for (const id of node.allowed) {
+				todo.push(node.children[id])
+			}
+		}
+		let out = {}
+		let stack = [{
+			cache: state.cache,
+			logits: state.logits,
+			node: root,
+			score: 0,
+		}]
+		while (stack.length) {
+			const row = stack.pop()
+			const rows = this.allowedLogps(row.logits, row.node.allowed)
+			for (const [id, logp] of rows) {
+				const score = row.score + logp
+				const nextNode = row.node.children[id]
+				if (id === this.tok.eos_id) {
+					out[nextNode.room] = score
+					continue
+				}
+				const next = this.forwardToken(id, row.cache)
+				stack.push({
+					cache: next.cache,
+					logits: next.logits,
+					node: nextNode,
+					score,
+				})
+			}
+		}
+		return out
 	}
 
 	inputState(text) {
@@ -616,87 +765,7 @@ class Model {
 		return this.cache
 	}
 
-	decodeBeam(text, width) {
-		const prefix = this.inputState(text)
-		const state = this.forwardToken(this.tok.sep_id, prefix.cache)
-		let beams = [{
-			cache: state.cache,
-			logits: state.logits,
-			node: this.trie,
-			room: [],
-			score: 0,
-		}]
-		let done = []
-		while (beams.length) {
-			let next = []
-			for (const beam of beams) {
-				const rows = this.allowedLogps(beam.logits, beam.node.allowed)
-				for (const [id, logp] of rows) {
-					const score = beam.score + logp
-					if (id === this.tok.eos_id) {
-						const text = this.decodeText(beam.room)
-						done.push([score, text])
-						continue
-					}
-					const room = beam.room.concat(id)
-					next.push({id, room, score, src: beam})
-				}
-			}
-			next.sort((left, right) => {
-				if (left.score !== right.score) {
-					return right.score - left.score
-				}
-				const a = this.decodeText(left.room)
-				const b = this.decodeText(right.room)
-				return a.localeCompare(b)
-			})
-			next = next.slice(0, width)
-			beams = next.map(row => {
-				const src = row.src
-				const state = this.forwardToken(row.id, src.cache)
-				return {
-					cache: state.cache,
-					logits: state.logits,
-					node: src.node.children[row.id],
-					room: row.room,
-					score: row.score,
-				}
-			})
-		}
-		done.sort((left, right) => {
-			if (left[0] !== right[0]) {
-				return right[0] - left[0]
-			}
-			return left[1].localeCompare(right[1])
-		})
-		return done.slice(0, 2).map(row => row[1])
-	}
-
-	nearestRooms(text, fn) {
-		let rows = []
-		for (const [room, key] of this.roomRows) {
-			rows.push([fn.call(this, text, key), room])
-		}
-		return this.topRoomRows(rows)
-	}
-
-	bestRooms(text, fn) {
-		let rows = []
-		for (const [room, key] of this.roomRows) {
-			rows.push([fn.call(this, text, key), room])
-		}
-		return this.topRoomRows(rows, true)
-	}
-
-	histRooms(text) {
-		const left = this.charHist(text)
-		let rows = []
-		for (const [room, _, right] of this.roomRows) {
-			rows.push([this.histScore(left, right), room])
-		}
-		return this.topRoomRows(rows, true)
-	}
-
+	/*
 	levenshtein(left, right, limit) {
 		if (limit != null) {
 			const gap = Math.abs(left.length - right.length)
@@ -724,6 +793,7 @@ class Model {
 		}
 		return dist
 	}
+	*/
 
 	damerau(left, right, limit) {
 		if (limit != null) {
@@ -770,42 +840,6 @@ class Model {
 		return dist
 	}
 
-	lcs(left, right, limit) {
-		if (right.length > left.length) {
-			[left, right] = [right, left]
-		}
-		if (limit != null && right.length < limit) {
-			return -1
-		}
-		let prev = Array(right.length + 1).fill(0)
-		for (let i = 1; i <= left.length; i += 1) {
-			const next = [0]
-			for (let j = 1; j <= right.length; j += 1) {
-				let value = prev[j]
-				if (next[next.length - 1] > value) {
-					value = next[next.length - 1]
-				}
-				if (left[i - 1] === right[j - 1]) {
-					const match = prev[j - 1] + 1
-					if (match > value) {
-						value = match
-					}
-				}
-				next.push(value)
-			}
-			prev = next
-		}
-		return prev[prev.length - 1]
-	}
-
-	histScore(left, right) {
-		let score = 0
-		for (const char of Object.keys(left)) {
-			score += Math.min(left[char], right[char] || 0)
-		}
-		return score
-	}
-
 	solve(text) {
 		const input = this.normalize(text)
 		if (!input) {
@@ -814,20 +848,49 @@ class Model {
 		if (this.solveCache.has(input)) {
 			return this.solveCache.get(input)
 		}
-		let out = []
-		const exact = this.roomKeys[input]
-		if (exact) {
-			out.push(...exact)
+		const leftSeg = this.segHist(input)
+		const leftHist = this.charHist(input)
+		let rows = []
+		for (const [room, key, ids, segs, hist] of this.roomRows) {
+			rows.push({
+				segs,
+				hist,
+				ids,
+				key,
+				room,
+				vs: [
+					Number(key === input),
+					Number(key.startsWith(input)),
+					Number(key.includes(input)),
+					this.commonPrefix(input, key),
+					this.commonSubstring(input, key),
+					this.histScore(leftSeg, segs),
+					this.histScore(leftHist, hist),
+					-this.damerau(input, key),
+				],
+			})
 		}
-		out.push(...this.nearestRooms(input, this.levenshtein))
-		out.push(...this.nearestRooms(input, this.damerau))
-		out.push(...this.bestRooms(input, this.lcs))
-		out.push(...this.histRooms(input))
-		try {
-			out.push(...this.decodeBeam(input, 2))
-		} catch (_) {}
-		out = Array.from(new Set(out)).sort((a, b) => a.localeCompare(b))
-		out = out.slice(0, 10).map(room => [room, this.roomLookup[room] || ""])
+		let out = []
+		let rest = rows
+		while (rest.length && out.length < 5) {
+			const layer = this.paretoLayer(rest, 8)
+			if (layer.length > 1) {
+				const ours = this.roomScores(input, layer)
+				for (const row of layer) {
+					const score = row.room in ours ? ours[row.room] : -Infinity
+					row.vs.push(score)
+				}
+				this.sortLayer(layer, 9)
+			}
+			for (const row of layer) {
+				out.push([row.room, this.roomLookup[row.room] || ""])
+				if (out.length >= 5) {
+					break
+				}
+			}
+			const seen = new Set(layer.map(row => row.room))
+			rest = rest.filter(row => !seen.has(row.room))
+		}
 		this.solveCache.set(input, out)
 		return out
 	}

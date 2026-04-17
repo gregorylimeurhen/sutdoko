@@ -1,22 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+
 * {
 	box-sizing: border-box;
-	font-family: "Inter";
 	font-size: 16px;
-	font-weight: 400;
 	overflow-wrap: break-word;
 }
 
 body {
-	background: whitesmoke;
+	background: white;
+	color: black;
+	font-family: "Geist";
+	font-weight: 350;
 	height: 100vh;
 	margin: 0;
 	padding: 0;
 	width: 100vw;
 }
 
+:where(input) {
+	font: inherit;
+}
+
 main {
-	margin: 4rem auto;
-	width: 80vw;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 4rem;
+	width: min(80vw, 30rem);
+}
+
+img#logo {
+	margin-bottom: 3rem;
+	margin-left: auto;
+	margin-right: auto;
+	width: 50%;
 }
 
 section#input {
@@ -24,39 +43,42 @@ section#input {
 	width: 100%;
 }
 
-img {
-	color: grey;
-	height: 1.25rem;
-	left: 1.25rem;
-	pointer-events: none;
+img#icon {
+	color: lightgrey;
+	height: 1.5rem;
+	left: 1.5rem;
 	position: absolute;
 	top: 50%;
 	transform: translateY(-50%);
-	width: 1.25rem;
+	width: 1.5rem;
 }
 
 input {
 	border: 1px solid lightgrey;
-	border-radius: 2rem;
-	box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px inset, oklch(0.1157 0 none / 0.06) 0px 0px 0px 1px inset, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-	font-family: "Inter";
+	border-radius: 999px;
+	box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.035) 0px 4px 20px 0px, rgba(31, 31, 30, 0.15) 0px 0px 0px 0.5px;
+	font-size: 1.5rem;
 	outline: none;
-	padding: 1rem 2rem 1rem 3.5rem;
+	padding: 1rem 4rem;
 	width: 100%;
 }
 
 section#output {
-	margin-top: 2rem;
+	padding: 3rem 0;
 }
 
 div + div {
-	margin-top: 1rem;
+	margin-top: 3rem;
 }
 
-h2, p {
-	margin: 0.5rem;
+h2 {
+	font-weight: 350;
+	font-size: 1rem;
+	line-height: 1.5;
+	margin-bottom: 1rem;
 }
 
 p {
-	font-weight: 500;
+	font-weight: 450;
+	font-size: 1rem;
 }
