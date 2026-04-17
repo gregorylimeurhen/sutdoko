@@ -4,11 +4,49 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>sutd404</title>
+		<link rel="preconnect" href="https://rsms.me/">
+		<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 		<link rel="stylesheet" href="index.css">
 		<script defer src="index.js"></script>
-	</head>
-	<body>
-		<input id="input" placeholder="Enter a room name">
-		<ul id="out"></ul>
-	</body>
-</html>
+		</head>
+			<body>
+				<main>
+					<div id="search">
+						<svg
+							id="icon"
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 256 256"
+						>
+							<rect width="256" height="256" fill="none"/>
+							<circle
+								cx="112"
+								cy="112"
+								r="80"
+								fill="none"
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="16"
+							/>
+							<line
+								x1="168.57"
+								y1="168.57"
+								x2="224"
+								y2="224"
+								fill="none"
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="16"
+							/>
+						</svg>
+						<input
+							id="input"
+							maxlength="128"
+							placeholder="Enter a room name"
+						>
+					</div>
+					<table id="output"></table>
+				</main>
+			</body>
+		</html>

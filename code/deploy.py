@@ -97,16 +97,21 @@ def make_project(cfg, tok):
 
 
 def ensure_project(cfg, tok):
+	name = cfg["project"]
+	print(f"project {name}")
 	try:
+		print("check project")
 		return get_project(cfg, tok)
 	except ApiError as err:
 		if err.code != 404:
 			raise
+	print("create project")
 	try:
 		return make_project(cfg, tok)
 	except ApiError as err:
 		if err.code != 409:
 			raise
+	print("project already exists")
 	return get_project(cfg, tok)
 
 
@@ -123,13 +128,23 @@ def dump_tensor(file, tensor, offset):
 
 def export_model(model_path, out_dir):
 	dev = torch.device("cpu")
+	root = pathlib.Path(__file__).resolve().parent
 	model_path = pathlib.Path(model_path).resolve()
 	snap_path = model_path.with_name("snapshot.zip")
+	print(f"export model {model_path}")
+	print(f"snapshot {snap_path}")
 	if not snap_path.exists():
 		raise FileNotFoundError(str(snap_path))
 	with utils.loaded_snapshot(snap_path) as (snap_root, ev):
+		print("load checkpoint")
 		model, tok, rooms = ev.load_checkpoint(model_path, dev)
-		aliases = ev.load_aliases(snap_root)
+		if hasattr(ev, "load_aliases"):
+			print("load aliases from snapshot")
+			aliases = ev.load_aliases(snap_root)
+		else:
+			print("load aliases from repo")
+			aliases = utils.load_aliases(root)
+		print("load room lookup")
 		room_map = ev.load_room_lookup(snap_root)
 		seed = ev.load_seed(snap_root)
 		trie = ev.build_room_trie(rooms, tok)
@@ -138,8 +153,10 @@ def export_model(model_path, out_dir):
 	offset = 0
 	meta = {}
 	path = out_dir / "weights.bin"
+	print(f"write weights {path}")
 	with path.open("wb") as file:
 		for name, tensor in model.state_dict().items():
+			print(f"tensor {name}")
 			info = dump_tensor(file, tensor, offset)
 			meta[name] = info
 			offset += info["size"] * 4
@@ -162,6 +179,8 @@ def export_model(model_path, out_dir):
 		"tokenizer": tok.to_dict(),
 	}
 	text = json.dumps(assets, indent=2) + "\n"
+	print(f"write assets {out_dir / 'assets.json'}")
+	print(f"rooms {len(rooms)} aliases {len(aliases)}")
 	(out_dir / "assets.json").write_text(text)
 	return out_dir
 
@@ -170,6 +189,8 @@ def build_dir(root, model):
 	app = root / "app"
 	tmp = tempfile.TemporaryDirectory()
 	out = pathlib.Path(tmp.name)
+	print(f"build dir {out}")
+	print(f"copy app {app}")
 	shutil.copytree(app, out, dirs_exist_ok=True)
 	export_model(model, out)
 	return tmp, out
@@ -203,14 +224,18 @@ def req(method, url, tok, body=None, ctype=None, extra=None):
 
 def create_deploy(cfg, tok, root):
 	files = []
+	print(f"upload dir {root}")
 	for path in sorted(root.rglob("*")):
 		if path.is_dir():
 			continue
 		data = path.read_bytes()
+		name = path.relative_to(root).as_posix()
+		size = len(data)
+		print(f"upload {name} {size}")
 		item = {
-			"file": path.relative_to(root).as_posix(),
+			"file": name,
 			"sha": upload_file(cfg, tok, data),
-			"size": len(data),
+			"size": size,
 		}
 		files.append(item)
 	body = {
@@ -224,6 +249,7 @@ def create_deploy(cfg, tok, root):
 	query["skipAutoDetectionConfirmation"] = "1"
 	url = api_url(cfg, "/v13/deployments", query)
 	body = json.dumps(body).encode()
+	print(f"create deploy files {len(files)}")
 	return req("POST", url, tok, body, "application/json")
 
 
@@ -234,10 +260,21 @@ def get_deploy(cfg, dep_id, tok):
 
 
 def wait_ready(cfg, dep_id, tok):
+	last = None
+	print(f"wait deploy {dep_id}")
 	while True:
-		row = get_deploy(cfg, dep_id, tok)
+		try:
+			row = get_deploy(cfg, dep_id, tok)
+		except urllib.error.URLError as err:
+			print(f"poll retry {err.reason}")
+			time.sleep(1)
+			continue
 		state = row.get("readyState") or row.get("status") or ""
+		if state != last:
+			print(f"state {state}")
+			last = state
 		if state == "READY":
+			print("deploy ready")
 			return row
 		if state in {"ERROR", "CANCELED"}:
 			msg = row.get("errorMessage") or "deploy failed"
@@ -264,13 +301,18 @@ def main():
 	cfg = load_deploy(root)
 	tok = load_token(root)
 	model = pathlib.Path(args.model).resolve()
+	print(f"root {root}")
+	print(f"api {cfg['api']}")
+	print(f"model {model}")
 	if not model.exists():
 		raise FileNotFoundError(str(model))
 	project = ensure_project(cfg, tok)
 	run = model.parent.parent.name
+	print(f"run {run}")
 	tmp, out = build_dir(root, model)
 	with tmp:
 		dep = create_deploy(cfg, tok, out)
+		print(f"deploy id {dep['id']}")
 		dep = wait_ready(cfg, dep["id"], tok)
 	url = dep.get("aliasFinal") or dep.get("url")
 	url = full_url(url)

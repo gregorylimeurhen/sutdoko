@@ -4,7 +4,7 @@ const EPS = 1.1920928955078125e-7
 
 const ui = {
 	input: document.getElementById("input"),
-	out: document.getElementById("out"),
+	output: document.getElementById("output"),
 }
 class Model {
 	constructor(assets, buf) {
@@ -13,6 +13,7 @@ class Model {
 		this.cfg = assets.config
 		this.direct = {}
 		this.keys = []
+		this.roomLookup = assets.room_lookup
 		this.rooms = assets.rooms
 		this.roomKeys = {}
 		this.roomRows = []
@@ -826,6 +827,7 @@ class Model {
 			out.push(...this.decodeBeam(input, 2))
 		} catch (_) {}
 		out = Array.from(new Set(out)).sort((a, b) => a.localeCompare(b))
+		out = out.slice(0, 10).map(room => [room, this.roomLookup[room] || ""])
 		this.solveCache.set(input, out)
 		return out
 	}
@@ -853,11 +855,16 @@ async function boot() {
 
 
 function render(rows) {
-	ui.out.replaceChildren()
-	for (const row of rows) {
-		const li = document.createElement("li")
-		li.textContent = row
-		ui.out.append(li)
+	ui.output.replaceChildren()
+	for (let i = 0; i < 10; i += 1) {
+		const tr = document.createElement("tr")
+		const name = document.createElement("td")
+		const address = document.createElement("td")
+		const row = rows[i] || ["", ""]
+		name.textContent = row[0]
+		address.textContent = row[1]
+		tr.append(name, address)
+		ui.output.append(tr)
 	}
 }
 
