@@ -11,4 +11,5 @@ runs/
 *.out
 *.snm
 *.synctex.gz
+*.toc
 *.vrb
