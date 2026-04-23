@@ -44,7 +44,7 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Z}{\mathbb{Z}}
 
-\title{sutd404}
+\title{SUTD404: Denoising Language Models for Room-to-Address Lookup}
 \author{
 	G. Lim,
 	E. Ang,
@@ -60,23 +60,35 @@
 \section{Introduction}
 
 The Singapore University of Technology and Design (SUTD) has over 200 rooms split across 5 buildings.
-To help people (especially visitors) find rooms,
-each room is assigned an address of the form
+Rooms are often communicated by name (e.g. ``Think Tank 1''),
+and each room is assigned an address of the form
 $$\texttt{x.y-z}$$
 where $\texttt{x}$ is a building number,
 $\texttt{y}$ is a floor number,
 and $\texttt{z}$ is a room number.
-However, resources that aim to map rooms to addresses remain few and far between.
-Physical resources like campus signs exist, but require one to walk around, expending lots of energy and time.
-Digital resources like the SUTD Assistive Maps (SAM) Telegram bot exist, but often fail on noisy input,
-which can be especially common for visitors unfamiliar with typing in English or the SUTD rooms themselves.
-To fill this gap, we built SUTD 404, a digital resource that aims to map rooms to addresses under noise.
+Room-to-address lookup---mapping rooms to their addresses---can be a hassle for staff, students, and visitors alike.
+However, resources for this task remain limited.
+Physical resources like campus signs have been constructed,
+but often require one to expend energy and time walking around.
+Over the years,
+digital resources like
+the SUTD Assistive Maps (SAM) Telegram bot
+\citep{sam}.
+However, they often fail on noisy input (e.g. strings with typos),
+which can be especially common among
+visitors unfamiliar with the rooms
+and people with less experience typing in English.
 
-For more information, visit
+To fill this gap,
+we introduce SUTD404,
+a digital resource for noisy room-to-address lookup.
+Visit
 \href{https://github.com/gregorylimeurhen/sutd404}{github.com/gregorylimeurhen/sutd404}
 for our code repository, and
 \href{https://sutd404.vercel.app}{sutd404.vercel.app}
 for our web application.
+
+\clearpage
 
 \section{Methodology}
 
@@ -84,16 +96,17 @@ for our web application.
 % For brevity, we call a room name a "room", and a room address an "address"
 
 Let $V$ be a vocabulary,
-and $R\subseteq V^{*}$ be a room set totally ordered by $\prec$,
+and $R\subseteq V^{*}$ be a room set,
+and $\prec$ be a total order on $R$,
+and $N\in\N_{\geq 1}$ be a result count,
+and $\prec_{N}$ be a total order on $R_{\prec}^{N}$,
 and $A\subseteq V^{*}$ be an address set,
 and $B\subseteq V$ be a boundary set,
 and $C\in\N$ be a corruption count,
 and $\alpha\in\R_{[0,1]}$ be a transposition rate,
 and $\beta\in\R_{[0,1]}$ be a substitution rate,
-and $\bm{\pi}=(\pi_\mathrm{train},\pi_\mathrm{val},\pi_\mathrm{test})\in\Delta^{2}$ be a training-validation-testing split,
-and $I:V\rightharpoonup\Z^{2}$ be a keyboard-position map,
-and $C\bm{\pi}\in\N^{3}$,
-and $N\in\N_{\geq}$ be a result count.
+and $\bm{\pi}=(\pi_\mathrm{train},\pi_\mathrm{val},\pi_\mathrm{test})\in\Delta_{C}^{2}$ be a training-validation-testing split,
+and $I:V\rightharpoonup\Z^{2}$ be a keyboard-position map.
 
 \begin{definition}[Keyboard]
 $${\setlength{\arraycolsep}{2pt}
@@ -116,6 +129,16 @@ $${\setlength{\arraycolsep}{2pt}
 Our keyboard uses the 60\% ANSI QWERTY en-US keyboard layout without backspace, tab, caps lock, enter, shift, ctrl, alt, and system keys
 \citep{qwerty}.
 All keys have equal padding between them.
+
+We obtained $R$ by politely scraping official SUTD contact pages.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\linewidth]{contact.png}
+	\caption{SUTD contact page.}
+\end{figure}
+
+The facility search function was queried by enumerating over all buildings and floors.
 
 \begin{algorithm}[H]
 	\caption{$\textsc{Corrupt}(\bm{x})$}
@@ -229,6 +252,7 @@ Let $f:V^{*}\times R\to\R$ be a scorer.
 	\\
 	\mathscr{D}_{f}(x)
 	&=
+	\min_{\prec}
 	\argmax_{r\in R}
 	f(x,r)
 \end{align*}
@@ -366,7 +390,14 @@ without disambiguating by terminal numbers.
 				(\abs{R}-p(r,f_{i}))
 			}$
 		\EndFor
-		\State $\bm{o}\gets\min\arg\max_{\bm{r}\in R_{\prec}^{N}}\sum_{i=1}^{N}s(r_{i})$
+		\State ${
+			\bm{o}
+			\gets
+			\min_{\prec_{N}}
+			\arg\max_{\bm{r}\in R_{\prec}^{N}}
+			\sum_{i=1}^{N}
+			s(r_{i})
+		}$
 		\State \Return $((o,\mathscr{L}(o))\mid o\in\bm{o})$
 	\end{algorithmic}
 \end{algorithm}
@@ -379,18 +410,32 @@ lowercasing,
 separating letters from numbers,
 and replacing words with their aliases,
 to make the string more closely match training strings.
-Then, the algorithm computes top-ranked rooms. % Ours still uses constrained decoding to avoid hallucination
+Then, the algorithm computes top-ranked rooms. % Ours still uses constrained decoding
 Finally, the algorithm looks up the address of each room, returning top-ranked room-address pairs.
 
-To more deeply improve user experience,
-we also implement the following features to make the application more efficient, responsive, and robust.
+\newpage
+
+To further improve the user experience,
+we also implemented the following features to make the application more efficient and responsive.
 \begin{itemize}
-	\item \textbf{Incremental prediction.} We predict on each new character entered.
-	\item \textbf{Prefix caching.} We KV-cache.
+	\item \textbf{Incremental prediction.} We predict during typing rather than waiting for final submission.
+	\item \textbf{Prefix caching.} We KV-cache previously computed prefix states and only process newly appended characters.
+	\item \textbf{Debounced querying.} We introduce a short debounce to avoid redundant intermediate inference on rapid keystrokes.
+	\item \textbf{Redundant-query suppression.} We skip empty, already displayed, and exact-match queries when full recomputation is unnecessary.
+	\item \textbf{Bounded result caching.} We memoise recent solved queries while capping cache growth to prevent performance degradation over time.
 \end{itemize}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\linewidth]{sam.png}
+	\caption{SAM user interface.}
+\end{figure}
+
 We further evaluated our system against SAM,
-measuring accuracy on a held-out set obtained by $10$ inputs from our test set using the Python library \texttt{random} with UTF-8 encoding.
+measuring accuracy on a held-out set of $10$ inputs
+sampled from our test set
+using the Python module \texttt{random}
+with UTF-8 encoding.
 To maximise fairness and reproducibility, we fixed the same seed and hardware as before.
 
 \begin{table}[H]
@@ -446,8 +491,10 @@ To maximise fairness and reproducibility, we fixed the same seed and hardware as
 	\caption{SAM evaluation results.}
 \end{table}
 
-The results suggest that SAM, as a traditional matching-based algorithm, can be effective on mildly corrupted inputs with strong lexical overlap---occasionally recovering the exact target---but degrades markedly as noise becomes more severe.
-We conclude that SAM can be robust to limited orthographic variation, but can also fail to generalise beyond surface-form similarity.
+The results suggest that SAM, as a traditional matching-based algorithm,
+can be effective on mildly corrupted inputs with strong lexical overlap---occasionally recovering the exact target---but degrades markedly as noise becomes more severe.
+We conclude that SAM can be robust to limited orthographic variation,
+but can also fail to generalise beyond surface-form similarity.
 
 \begin{table}[H]
 	\centering
@@ -471,7 +518,31 @@ and provide a practical foundation for reliable campus assistance.
 \begin{notation}
 Let $n\in\N_{\geq 1}$.
 $$
-	R_{\prec}^{n}=\{\bm{r}\in R^{n}\mid r_{1}\prec\dots\prec r_{n}\}
+	R_{\prec}^{n}
+	=
+	\mleft\{
+		\bm{r}\in R^{n}
+		\;\middle|\;
+		r_{1}\prec\dots\prec r_{n}
+	\mright\}
+$$
+\end{notation}
+
+\begin{notation}
+Let $c\in\N$.
+$$
+	\Delta_{c}^{2}
+	=
+	\mleft\{
+		\bm{p}\in\R_{[0,1]}^{3}
+		\;\middle|\;
+		\sum_{i=1}^{3}
+		p_{i}
+		=
+		1
+		,\,
+		c\bm{p}\in\N^{3}
+	\mright\}
 $$
 \end{notation}
 
