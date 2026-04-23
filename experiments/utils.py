@@ -24,6 +24,7 @@ BASELINE_NAMES = [
 	# "levenshtein",
 	"longest_common_prefix_length",
 	"longest_common_substring_length",
+	"substring_jaccard_similarity",
 	"whitespace_segment_histogram_intersection",
 	"character_histogram_intersection",
 	"damerau_levenshtein",
@@ -817,6 +818,22 @@ def longest_common_substring_length(left, right, min_score=None):
 	return best
 
 
+def substring_jaccard_similarity(left, right, min_score=None):
+	left_set = set()
+	right_set = set()
+	for start in range(len(left)):
+		for stop in range(start + 1, len(left) + 1):
+			left_set.add(left[start:stop])
+	for start in range(len(right)):
+		for stop in range(start + 1, len(right) + 1):
+			right_set.add(right[start:stop])
+	union = len(left_set | right_set)
+	score = 1.0 if not union else len(left_set & right_set) / union
+	if min_score is not None and score < min_score:
+		return -1.0
+	return score
+
+
 def lcs_length(left, right, min_score=None):
 	if len(left) < len(right):
 		left, right = right, left
@@ -974,6 +991,7 @@ def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 	# lev_rng = Rng(seed)
 	pre_rng = Rng(seed)
 	sub_rng = Rng(seed)
+	sj_rng = Rng(seed)
 	seg_rng = Rng(seed)
 	hist_rng = Rng(seed)
 	dam_rng = Rng(seed)
@@ -981,6 +999,7 @@ def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 	damf = damerau_levenshtein_distance
 	pref = longest_common_prefix_length
 	subf = longest_common_substring_length
+	sjf = substring_jaccard_similarity
 	room_segs = [(room, seg_hist(room)) for room in rooms]
 	room_hists = [(room, char_hist(room)) for room in rooms]
 	preds = {}
@@ -988,6 +1007,7 @@ def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 	# lev = lambda text: nearest_room(text, rooms, lev_rng, levenshtein_distance)
 	pre = lambda text: best_room(text, rooms, pre_rng, pref)
 	sub = lambda text: best_room(text, rooms, sub_rng, subf)
+	sj = lambda text: best_room(text, rooms, sj_rng, sjf)
 	seg = lambda text: seg_room(text, room_segs, seg_rng)
 	hist = lambda text: hist_room(text, room_hists, hist_rng)
 	dam = lambda text: nearest_room(text, rooms, dam_rng, damf)
@@ -997,6 +1017,8 @@ def evaluate_rows_into(model, rows, tok, dev, rm, rooms, write, seed):
 	preds[name] = lambda text: pre(text)
 	name = "longest_common_substring_length"
 	preds[name] = lambda text: sub(text)
+	name = "substring_jaccard_similarity"
+	preds[name] = lambda text: sj(text)
 	name = "whitespace_segment_histogram_intersection"
 	preds[name] = lambda text: seg(text)
 	name = "character_histogram_intersection"

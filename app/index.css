@@ -31,13 +31,6 @@ main {
 	width: min(80vw, 30rem);
 }
 
-img#logo {
-	margin-bottom: 3rem;
-	margin-left: auto;
-	margin-right: auto;
-	width: 50%;
-}
-
 section#input {
 	position: relative;
 	width: 100%;

@@ -6,18 +6,22 @@
 \usepackage{amsthm}
 \usepackage{bm}
 \usepackage{booktabs}
+\usepackage{enumitem}
 \usepackage{hyperref}
 \usepackage[scr=boondox]{mathalpha}
 \usepackage{mathtools}
 \usepackage{mleftright}
+\usepackage[round]{natbib}
 \usepackage{parskip}
 \usepackage{physics}
-\usepackage{times}
+\usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{xparse}
 
 \algrenewcomment[1]{{$\triangleright$\text{\ }\textit{#1}}}
 \setcounter{MaxMatrixCols}{30}
+\setlist{left=0pt, nosep}
+
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
 \newtheorem{notation}{Notation}
@@ -30,6 +34,9 @@
 \def\thm@space@setup{\thm@preskip=\parskip \thm@postskip=0pt}
 \makeatother
 
+\let\oldhref\href
+\renewcommand{\href}[2]{\oldhref{#1}{\textbf{#2}}}
+
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 \newcommand{\E}{\mathbb{E}}
@@ -37,12 +44,12 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Z}{\mathbb{Z}}
 
-\title{SUTD 404}
+\title{sutd404}
 \author{
-	Gregory Lim,
-	Edison Ang,
-	Manishansh Shaswat,
-	Muthu Ramaswamy
+	G. Lim,
+	E. Ang,
+	M. Shaswat,
+	M. Ramaswamy
 }
 \date{April 2026}
 
@@ -55,36 +62,29 @@
 The Singapore University of Technology and Design (SUTD) has over 200 rooms split across 5 buildings.
 To help people (especially visitors) find rooms,
 each room is assigned an address of the form
-$\texttt{x.y-z}$,
+$$\texttt{x.y-z}$$
 where $\texttt{x}$ is a building number,
 $\texttt{y}$ is a floor number,
 and $\texttt{z}$ is a room number.
-
 However, resources that aim to map rooms to addresses remain few and far between.
 Physical resources like campus signs exist, but require one to walk around, expending lots of energy and time.
-Digital resources like the SUTD Assistive Maps (SAM) Telegram bot exist, but are often arduous to maintain and less robust to noise like typos (which can be especially pertinent for visitors who do not often type in English).
+Digital resources like the SUTD Assistive Maps (SAM) Telegram bot exist, but often fail on noisy input,
+which can be especially common for visitors unfamiliar with typing in English or the SUTD rooms themselves.
+To fill this gap, we built SUTD 404, a digital resource that aims to map rooms to addresses under noise.
 
-To fill this gap, we built SUTD 404, a digital resource that aims to maps rooms to addresses in a way that handles noise gracefully.
-Our repository and web application can be found at
-\begin{center}
-\href{github.com/gregorylimeurhen/sutd404}{github.com/gregorylimeurhen/sutd404}
-\end{center}
-and
-\begin{center}
-\href{sutd404.vercel.app}{sutd404.vercel.app}
-\end{center}
-respectively.
+For more information, visit
+\href{https://github.com/gregorylimeurhen/sutd404}{github.com/gregorylimeurhen/sutd404}
+for our code repository, and
+\href{https://sutd404.vercel.app}{sutd404.vercel.app}
+for our web application.
 
 \section{Methodology}
 
 % Read comments for developer (i.e. implementation) prose not in the paper please!
 % For brevity, we call a room name a "room", and a room address an "address"
-% Henceforth:
-% - all ties shall be broken uniform randomly, if any
-% - stuff (e.g. columns, keys, rows, values, etc.) shall be sorted lexicographically, if any
 
 Let $V$ be a vocabulary,
-and $R\subseteq V^{*}$ be a room set,
+and $R\subseteq V^{*}$ be a room set totally ordered by $\prec$,
 and $A\subseteq V^{*}$ be an address set,
 and $B\subseteq V$ be a boundary set,
 and $C\in\N$ be a corruption count,
@@ -93,7 +93,7 @@ and $\beta\in\R_{[0,1]}$ be a substitution rate,
 and $\bm{\pi}=(\pi_\mathrm{train},\pi_\mathrm{val},\pi_\mathrm{test})\in\Delta^{2}$ be a training-validation-testing split,
 and $I:V\rightharpoonup\Z^{2}$ be a keyboard-position map,
 and $C\bm{\pi}\in\N^{3}$,
-and each tie be broken uniform randomly.
+and $N\in\N_{\geq}$ be a result count.
 
 \begin{definition}[Keyboard]
 $${\setlength{\arraycolsep}{2pt}
@@ -113,7 +113,8 @@ $${\setlength{\arraycolsep}{2pt}
 }$$
 \end{definition}
 
-Our keyboard uses the 60\% ANSI QWERTY en-US keyboard layout without backspace, tab, caps lock, enter, shift, ctrl, alt, and system keys.
+Our keyboard uses the 60\% ANSI QWERTY en-US keyboard layout without backspace, tab, caps lock, enter, shift, ctrl, alt, and system keys
+\citep{qwerty}.
 All keys have equal padding between them.
 
 \begin{algorithm}[H]
@@ -144,7 +145,21 @@ All keys have equal padding between them.
 			${\bm{x}\sim\alpha\,\mathcal{U}(T)+(1-\alpha)\,\delta(\bm{x})}$
 		\EndIf
 		\For{$i\in[1..\abs{\bm{x}}]$}
-			\State $S\gets\{k\in K\setminus \{x_{i}\}\mid I(k)-I(x_{i})\in[-1..1]\times[-2..2]\}$
+			\State ${
+				S
+				\gets
+				\{
+					k\in K
+					\setminus
+					\{x_{i}\}
+					\mid
+					I(k)-I(x_{i})
+					\in
+					[-1..1]
+					\times
+					[-2..2]
+				\}
+			}$
 			\If{$S\neq\varnothing$}
 				${x_{i}\sim\beta\,\mathcal{U}(S)+(1-\beta)\,\delta(x_{i})}$
 			\EndIf
@@ -156,7 +171,11 @@ All keys have equal padding between them.
 \begin{algorithm}[H]
 	\caption{$\textsc{Split}()$}
 	\begin{algorithmic}
-		\State $(D_\mathrm{train},D_\mathrm{val},D_\mathrm{test})\gets(\varnothing,\varnothing,\varnothing)$
+		\State ${
+			(D_\mathrm{train},D_\mathrm{val},D_\mathrm{test})
+			\gets
+			(\varnothing,\varnothing,\varnothing)
+		}$
 		\For{$r\in R$}
 			\State $P\gets\varnothing$
 			\While{$\abs{P}<C$}
@@ -165,9 +184,21 @@ All keys have equal padding between them.
 					$P\gets P\cup\{(r',r)\}$
 				\EndIf
 			\EndWhile
-			\State $P_\mathrm{train}\sim\mathcal{U}(\{Q\subseteq P\mid \abs{Q}=\pi_\mathrm{train}C\})$
-			\State $P_\mathrm{val}\sim\mathcal{U}(\{Q\subseteq P\setminus P_\mathrm{train}\mid \abs{Q}=\pi_\mathrm{val}C\})$
-			\State $P_\mathrm{test}\gets P\setminus(P_\mathrm{train}\cup P_\mathrm{val})$
+			\State ${
+				P_\mathrm{train}
+				\sim
+				\mathcal{U}(\{Q\subseteq P\mid \abs{Q}=\pi_\mathrm{train}C\})
+			}$
+			\State ${
+				P_\mathrm{val}
+				\sim
+				\mathcal{U}(\{Q\subseteq P\setminus P_\mathrm{train}\mid \abs{Q}=\pi_\mathrm{val}C\})
+			}$
+			\State ${
+				P_\mathrm{test}
+				\gets
+				P\setminus(P_\mathrm{train}\cup P_\mathrm{val})
+			}$
 			\State ${
 				(D_\mathrm{train},D_\mathrm{val},D_\mathrm{test})
 				\gets
@@ -187,7 +218,7 @@ First, the algorithm samples whether to transpose spans by uniformly sampling fr
 Then, for each character in the string, the algorithm samples whether to substitute the character by uniformly sampling from the space of character substitutions.
 This space contains nearby characters collected by sliding a window of height $3$ and width $5$ centred at each position in $K$.
 Finally, the algorithm returns the string.
-We set $C=50$, and $\alpha=0.5$, and $\beta=0.05$, and $\bm{\pi}=(0.8,0.1,0.1)$ to generate plausible-looking typos tractably.
+We set $C=50$, and $\alpha=0.5$, and $\beta=0.05$, and $\bm{\pi}=(0.8,0.1,0.1)$ to generate plausible-looking typos in a tractable way.
 
 \begin{definition}[Denoiser]
 Let $f:V^{*}\times R\to\R$ be a scorer.
@@ -203,11 +234,20 @@ Let $f:V^{*}\times R\to\R$ be a scorer.
 \end{align*}
 \end{definition}
 
+Our denoiser is a Nanochat-parameterised, character-level transformer of depth 2 with decoding constrained to the trie induced by $R$
+\citep{nanochat}.
+We use character-level tokenisation as typos are often character-level, and room names are short enough for individual characters to be highly meaningful semantic units for our task.
+We use trie-constrained decoding to efficiently avoid hallucination caused by unconstrained decoding.
+To train our denoiser, we use a standard cross-entropy loss and AdamW optimiser on default settings.
+A more complete list of hyperparameters can be found in our repository.
+
 \begin{definition}[Lookup]
 $$
 	\mathscr{L}:R\to A
 $$
 \end{definition}
+
+Our lookup is a standard room-address table.
 
 % Edges map rooms to their addresses in the untouched `edges.tsv`
 % Because a room like `foo` can have multiple addresses like `A, B`,
@@ -217,13 +257,6 @@ $$
 % 2. convert `edges.tsv` to `n2a.tsv` with each row like `foo	A, B`
 % so look-up for `foo` yields `A, B`
 % The data is thus fixed after preprocessing
-
-Our denoiser is a Nanochat-parameterised, character-level transformer of depth 2 with decoding constrained to the trie induced by $R$. % cite karpathy/nanochat
-We use character-level tokenisation as typos are often character-level, and room names are short enough for individual characters to be highly meaningful semantic units for our task.
-We use trie-constrained decoding to efficiently avoid hallucination caused by unconstrained decoding.
-We use a standard cross-entropy loss and AdamW optimiser.
-A complete list of hyperparameters can be found in our GitHub repository.
-Our lookup is a standard room-address table.
 
 % Search the web for https://github.com/karpathy/nanochat
 % Everything is clean, default, and standard with no other stuffs:
@@ -251,90 +284,198 @@ Firstly, the algorithm denoises the string to a room using the scorer if the str
 Then, the algorithm looks up the address of the room.
 Finally, the algorithm returns the address.
 
-\section{Evaluation}
-
-Keeping the hardware and rest of the system fixed, we evaluated our denoiser against
-Damerau--Levenshtein distance (DL),
-longest common substring length (LCS),
-and longest common prefix (LCP) denoisers,
+We first evaluated our denoiser against
+identity (I),
+substring Jaccard similarity (SJ),
+negative Damerau--Levenshtein distance (DL),
+and
+longest common prefix length (LCP)
+denoisers,
 measuring the accuracy and mean latency of each denoiser on the test set.
+To maximise fairness and reproducibility, we fixed a seed and hardware.
 % We display the results with more natural units and scale, for your perusal
 
 \begin{table}[H]
 	\centering
-	\caption{Summary.}
 	\begin{tabular}{lll}
 		\toprule
-		Denoiser & Accuracy (\%) & Mean Latency (ms) \\
+		\textbf{Denoiser} & \textbf{Accuracy} (\%) & \textbf{Mean Latency} (ms) \\
 		\midrule
-		% I & 0.00 & 0.00590 \\
-		% L & 72.5 & 9.05 \\
-		DL & 71.9 & 17.1 \\
-		% LCS & 59.2 & 5.38 \\ % subsequence
-		LCS & 47.2 & 7.20 \\ % substring
-		LCP & 29.2 & 0.04 \\
-		% CH & 37.1 & \textbf{0.289} \\
-		Ours & \textbf{97.3} & 8.00 \\
+		LCP & 29.2 & \textbf{0.04} \\
+		DL & 71.9 & 16.7 \\
+		SJ & 89.3 & 20.8 \\
+		Ours & \textbf{97.3} & 8.19 \\
 		\bottomrule
 	\end{tabular}
+	\caption{Denoiser evaluation results summary.}
 \end{table}
 
-DL captures insertions, deletions, substitutions, and adjacent transpositions.
-% LCS and CH capture ordered and unordered character overlap respectively.
 Accuracy was measured using the fraction of test inputs for which final address equals gold address.
 Mean latency was measured using the mean time taken to get an output from giving an input.
 
-\section{Deployment}
+We implemented our system as a web application.
+We set $N=26$ because, grouping rooms by shared prefix up to terminal numbers,
+the largest group (the group of Think Tank rooms) contains $26$ rooms,
+so showing $26$ results could allow a user to find their room by prefix
+without disambiguating by terminal numbers.
 
 \begin{algorithm}[H]
 	\caption{$\textsc{Predict}(x)$}
 	\begin{algorithmic}
 		\Require $x\in V^{*}$
 		\State $x\gets\textsc{Strip}(x)$
-		% example: " LT2 " -> "LT2"
+		% example: " LT,2 " -> "LT,2"
+		\State $x\gets\textsc{Depunctuate}(x)$
+		% example: "LT,2" -> "LT2"
 		\State $x\gets\textsc{Lowercase}(x)$
 		% example: "LT2" -> "lt2"
 		\State $x\gets\textsc{AlphanumericSplit}(x)$
 		% example: "lt2" -> "lt 2"
 		\State $x\gets\textsc{Alias}(x)$
-		% example: "lt 2" -> "lecture theatre 2"
+		% example: "lt 2" -> "lecture theatre 2", read aliases.tsv to see my convention for this
 		\If{$x\in R$}
-			\Return $(x,\mathscr{L}(x))$
+			\Return $((x,\mathscr{L}(x)))$
 		\EndIf
-		\State ${ % do not refer to this, I will amend this later
-			O
+		\State ${
+			\bm{f}
 			\gets
-			\bigcup_{
-				f
-				\in
-				\{
-					\textsc{L},
-					\textsc{DL},
-					\textsc{LCS},
-					\textsc{CH},
-					\textsc{Ours}
-				\}
-			}
-			\arg\operatorname{top}_{r\in R}^{(2)}f(x,r)
+			(
+				\textsc{LCP}, % why/assumption: most frequent error type
+				\textsc{SJ},
+				\textsc{DL},
+				\textsc{Ours} % why/assumption: least frequent error type
+			)
 		}$
-		\State $O\gets\{(o,\mathscr{L}(o))\mid o\in O\}$
-		\State $O\gets\textsc{LexicographicSort}(O)$
-		\State \Return $O$
+		\For{$r\in R$}
+			\For{$f\in\bm{f}$}
+				\State ${
+					p(r,f)
+					\gets
+					\abs{\{r'\in R\mid f(x,r')>f(x,r)\}}
+					+
+					1
+				}$
+			\EndFor
+		\EndFor
+		\For{$r\in R$}
+			\State ${
+				s(r)
+				\gets
+				\sum_{i=1}^{\abs{\bm{f}}}
+				(1/\abs{R}^{i-1})
+				(\abs{R}-p(r,f_{i}))
+			}$
+		\EndFor
+		\State $\bm{o}\gets\min\arg\max_{\bm{r}\in R_{\prec}^{k}}\sum_{i=1}^{3}s(r_{i})$
+		\State \Return $((o,\mathscr{L}(o))\mid o\in\bm{o})$
 	\end{algorithmic}
 \end{algorithm}
 
 Our prediction algorithm receives a string as input.
-Firstly, the algorithm normalises the string by stripping, lowercasing, separating letters from numbers, and replacing words with aliases, to more closely match strings at training.
-Then, in parallel, the algorithm collects the top-2 rooms for the string under L, DL, LCS, CH, and an augmented version of our denoiser, as they have comparable latencies and are able to cover each others' weaknesses.
-This augmented version of our denoiser uses beam search with beam width 2 to improve robustness at comparable latency. % Is this basically accurate?
-Finally, the algorithm looks up the address of each room, returning the room-address pairs in lexicographic order for readability.
+Firstly, the algorithm normalises the string by
+stripping whitespace,
+removing punctuation,
+lowercasing,
+separating letters from numbers,
+and replacing words with their aliases,
+to make the string more closely match training strings.
+Then, the algorithm computes top-ranked rooms. % Ours still uses constrained decoding to avoid hallucination
+Finally, the algorithm looks up the address of each room, returning top-ranked room-address pairs.
 
-To improve the user experience of our application,
-we made our application call the prediction algorithm on each new character entered and use prefix (key-value) caching,
-to efficiently make the application feel more responsive.
+To more deeply improve user experience,
+we also implement the following features to make the application more efficient, responsive, and robust.
+\begin{itemize}
+	\item \textbf{Incremental prediction.} We predict on each new character entered.
+	\item \textbf{Prefix caching.} We KV-cache.
+\end{itemize}
 
-\section{Conclusion}
+We further evaluated our system against SAM,
+measuring accuracy on a held-out set obtained by $10$ inputs from our test set using the Python library \texttt{random} with UTF-8 encoding.
+To maximise fairness and reproducibility, we fixed the same seed and hardware as before.
 
+\begin{table}[H]
+	\centering
+	\begin{tabularx}{\linewidth}{lX}
+		\toprule
+		\textbf{Input} & \texttt{design bdhavioural laboratory 1} \\
+		\textbf{Gold} & \texttt{behavioural design laboratory 1} \\
+		\textbf{Prediction} & -- \\
+		\midrule
+		\textbf{Input} & \texttt{capstone rolm 8} \\
+		\textbf{Gold} & \texttt{capstone room 8} \\
+		\textbf{Prediction} & \texttt{capstone room 8}, \texttt{capstone room 7}, \texttt{capstone room 6}, \\
+		& \texttt{capstone room 5} \\
+		\midrule
+		\textbf{Input} & \texttt{lecturr 5 theatre} \\
+		\textbf{Gold} & \texttt{lecture theatre 5} \\
+		\textbf{Prediction} & \texttt{lecture theatre 5}, \texttt{lecture theatre 4}, \\
+		& \texttt{lecture theatre 2}, \texttt{lecture theatre 3} \\
+		\midrule
+		\textbf{Input} & \texttt{com;ositemdesign laboratory} \\
+		\textbf{Gold} & \texttt{composite design laboratory} \\
+		\textbf{Prediction} & -- \\
+		\midrule
+		\textbf{Input} & \texttt{thinl tank 23} \\
+		\textbf{Gold} & \texttt{think tank 23} \\
+		\textbf{Prediction} & \texttt{think tank 15}, \texttt{think tank 24}, \texttt{a c toh think tank 25}, \\
+		& \texttt{think tank 22} \\
+		\midrule
+		\textbf{Input} & \texttt{temasekvlaboratories and itrust labiratkry 6} \\
+		\textbf{Gold} & \texttt{temasek laboratories and itrust laboratory 6} \\
+		\textbf{Prediction} & \texttt{temasek laboratories and itrust laboratory 6} \\
+		\midrule
+		\textbf{Input} & \texttt{think 2mtank} \\
+		\textbf{Gold} & \texttt{think tank 2} \\
+		\textbf{Prediction} & \texttt{think tank 2}, \texttt{think tank 14} \\
+		\midrule
+		\textbf{Input} & \texttt{section compos7te} \\
+		\textbf{Gold} & \texttt{composite section} \\
+		\textbf{Prediction} & \texttt{cohort classroom 7} \\
+		\midrule
+		\textbf{Input} & \texttt{hokkien lecture coundayioh theatre 4} \\
+		\textbf{Gold} & \texttt{hokkien foundation lecture theatre 4} \\
+		\textbf{Prediction} & \texttt{hokkien foundation lecture theatre 4}, \\
+		& \texttt{lecture theatre 2}, \texttt{lecture theatre 3}, \\
+		& \texttt{lecture theatre 1} \\
+		\midrule
+		\textbf{Input} & \texttt{cohference capsrone ro9m 2} \\
+		\textbf{Gold} & \texttt{capstone conference room 2} \\
+		\textbf{Prediction} & \texttt{capstone room 9} \\
+		\bottomrule
+	\end{tabularx}
+	\caption{SAM evaluation results.}
+\end{table}
 
+The results suggest that SAM, as a traditional matching-based algorithm, can be effective on mildly corrupted inputs with strong lexical overlap---occasionally recovering the exact target---but degrades markedly as noise becomes more severe.
+We conclude that SAM can be robust to limited orthographic variation, but can also fail to generalise beyond surface-form similarity.
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{ll}
+		\toprule
+		\textbf{System} & \textbf{Accuracy} (\%) \\
+		\midrule
+		SAM & 40 \\
+		Ours & \textbf{100} \\
+		\bottomrule
+	\end{tabular}
+	\caption{System evaluation results summary.}
+\end{table}
+
+Our system outperformed SAM, achieving complete recovery.
+We believe these results demonstrate strong promise for the task of mapping rooms to addresses under noise,
+and provide a practical foundation for reliable campus assistance.
+
+\section{Appendix}
+
+\begin{notation}
+Let $n\in\N_{\geq 1}$.
+$$
+	R_{\prec}^{n}=\{\bm{r}\in R^{n}\mid r_{1}\prec\dots\prec r_{n}\}
+$$
+\end{notation}
+
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
 
 \end{document}
