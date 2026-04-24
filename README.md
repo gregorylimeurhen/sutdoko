@@ -7,12 +7,7 @@ Room-to-address lookup made easy!
 
 ## Setup
 
-Follow these steps if you want to run our code locally.
-
-1. Clone repository. For example:
-```bash
-git clone https://github.com/gregorylimeurhen/sutd404
-```
+Follow these steps after cloning our repository if you want to run our code locally.
 
 ### Web Application
 
@@ -40,7 +35,12 @@ Follow these steps if you want to run our experiments locally.
 3. Install packages in `./experiments/requirements.txt`. For example:
 ```bash
 # sutd404 $
-            python3 -m pip install -r ./experiments/requirements.txt
+            pip install -r ./experiments/requirements.txt
+```
+4. Run
+```bash
+# sutd404 $
+            ./experiments/run.sh
 ```
 
 ## Structure
