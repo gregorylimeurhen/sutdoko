@@ -8,6 +8,7 @@
 \usepackage{bm}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{float}
 \usepackage{hyperref}
 \usepackage[scr=boondox]{mathalpha}
 \usepackage{mathtools}
@@ -60,35 +61,36 @@
 
 \section{Introduction}
 
-The Singapore University of Technology and Design (SUTD) has over 200 rooms split across 5 buildings.
+Singapore University of Technology and Design (SUTD) has over 200 rooms split across 5 buildings.
 Rooms are often communicated by name (e.g. ``Think Tank 1''),
 and each room is assigned an address of the form
 $$\texttt{x.y-z}$$
 where $\texttt{x}$ is a building number,
 $\texttt{y}$ is a floor number,
 and $\texttt{z}$ is a room number.
-Room-to-address lookup---mapping rooms to their addresses---can be a hassle for staff, students, and visitors alike.
+Room address lookup---mapping rooms to their addresses---can be a hassle for staff, students, and visitors alike.
 However, resources for this task remain limited.
-Physical resources like campus signs have been constructed,
+Physical resources like campus signs exist,
 but often require one to expend energy and time walking around.
 Over the years,
 digital resources like
 the SUTD Assistive Maps (SAM) Telegram bot
-\citep{sam}.
+\citep{sam}
+have been developed.
 However, they often fail on noisy input (e.g. strings with typos),
-which can be especially common among
+which can be especially common for
 visitors unfamiliar with the rooms
 and people with less experience typing in English.
 
 To address this gap,
 we introduce SUTD404,
-a digital resource for noisy room-to-address lookup.
+a digital resource for room address lookup.
 Visit
 \href{https://github.com/gregorylimeurhen/sutd404}{github.com/gregorylimeurhen/sutd404}
 for our code repository, and
 \href{https://sutd404.vercel.app}{sutd404.vercel.app}
 for our web application.
-We trained on T4 GPU for approximately 1 hour.
+We trained on a T4 GPU for approximately 1 hour.
 
 \clearpage
 
@@ -100,8 +102,8 @@ We trained on T4 GPU for approximately 1 hour.
 Let $V$ be a vocabulary,
 and $R\subseteq V^{*}$ be a room set,
 and $\prec$ be a total order on $R$,
-and $N\in\N_{\geq 1}$ be a result count,
-and $\prec_{N}$ be a total order on $R_{\prec}^{N}$,
+and $L\in\N_{\geq 1}$ be a result count,
+and $\prec_{L}$ be a total order on $R_{\prec}^{L}$,
 and $A\subseteq V^{*}$ be an address set,
 and $B\subseteq V$ be a boundary set,
 and $C\in\N$ be a corruption count,
@@ -130,7 +132,7 @@ $${\setlength{\arraycolsep}{2pt}
 
 Our keyboard uses the 60\% ANSI QWERTY en-US keyboard layout without backspace, tab, caps lock, enter, shift, ctrl, alt, and system keys
 \citep{qwerty}.
-All keys have equal padding between them.
+All keys have equal spacing between them.
 
 \begin{figure}[H]
 	\centering
@@ -247,11 +249,15 @@ First, the algorithm samples whether to transpose spans by uniformly sampling fr
 Then, for each character in the string, the algorithm samples whether to substitute the character by uniformly sampling from the space of character substitutions.
 This space contains nearby characters collected by sliding a window of height $3$ and width $5$ centred at each position in $K$.
 Finally, the algorithm returns the string.
-We set $C=50$, and $\alpha=0.5$, and $\beta=0.05$, and $\bm{\pi}=(0.8,0.1,0.1)$
-to generate plausible-looking typos in a tractable way.
 The split is stratified by room to make the training, validation, and test sets comparable across rooms.
+We set $C=50$, and $\alpha=0.5$, and $\beta=0.05$, and $\bm{\pi}=(0.8,0.1,0.1)$ to generate plausible-looking typos in a tractable way.
 
 \newpage
+
+We set $L=26$ because, grouping rooms by shared prefix up to terminal numbers,
+the largest group (the group of Think Tank rooms) contains $26$ rooms,
+so showing $26$ results could allow a user to find their room by prefix
+without using terminal numbers for disambiguation.
 
 \begin{definition}[Denoiser]
 Let $f:V^{*}\times R\to\R$ be a scorer.
@@ -272,7 +278,6 @@ Our denoiser is a Nanochat-parameterised, character-level transformer of depth 2
 \citep{nanochat}.
 We use character-level tokenisation as typos are often character-level, and room names are often short enough for individual characters to be meaningful lexical units for our task.
 We use trie-constrained decoding to efficiently avoid room hallucination.
-
 Our denoiser is trained using a standard cross-entropy loss and AdamW optimiser.
 A more complete list of hyperparameters can be found in our code repository.
 
@@ -296,7 +301,7 @@ Our lookup is a standard room-address table.
 % Search the web for https://github.com/karpathy/nanochat
 % Everything is clean, default, and standard with no other stuffs:
 % - Training loss applied only to clean (target) portion
-% - Adam on default settings
+% - AdamW on default settings
 % - Batch size derivable as largest batch that fits in memory
 % - Seed 1
 % - Nothing else, no dropout or whatever
@@ -320,33 +325,37 @@ Then, the algorithm looks up the address of the room.
 Finally, the algorithm returns the address.
 
 \newpage
-% We display the results with more natural units and scale, for your perusal
+
+We conducted experiments for empirical validation of our denoiser and system.
+Accuracy was measured as the percentage of test inputs for which the final predicted address equalled the gold address.
+Top-$L$ accuracy was measured as the percentage of test inputs for which the gold address appeared among the final $L$ predicted addresses.
+(Mean) latency was measured in milliseconds using the mean time taken to get an output from giving an input.
+For fairness and reproducibility, we use a fixed seed and hardware.
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{lll}
 		\toprule
-		\textbf{Denoiser} & \textbf{Accuracy} (\%) & \textbf{Mean Latency} (ms) \\
+		\textbf{Denoiser} & \textbf{Accuracy} & \textbf{Latency} \\
 		\midrule
-		LCP & 29.2 & \textbf{0.04} \\
+		LCP & 29.2 & \textbf{0.1} \\
 		DL & 71.9 & 16.7 \\
 		SJ & 89.3 & 20.8 \\
-		Ours & \textbf{97.3} & 8.19 \\
+		Ours & \textbf{97.3} & 8.2 \\
 		\bottomrule
 	\end{tabular}
 	\caption{Denoiser evaluation results summary.}
 \end{table}
 
-We first evaluated our denoiser against
+We evaluated our denoiser against
 substring Jaccard similarity (SJ),
 negative Damerau--Levenshtein distance (DL),
 and
 longest common prefix length (LCP)
 denoisers,
 measuring the accuracy and mean latency of each denoiser on the test set.
-To maximise fairness and reproducibility, we fixed a seed and hardware.
-Accuracy was measured using the fraction of test inputs for which final address equals gold address.
-Mean latency was measured using the mean time taken to get an output from giving an input.
+Our denoiser outperformed the LCP, DL, and SJ denoisers by non-negligible margins,
+suggesting greater noise robustness.
 
 \begin{algorithm}[H]
 	\caption{$\textsc{Predict}(x)$}
@@ -398,9 +407,9 @@ Mean latency was measured using the mean time taken to get an output from giving
 		\State ${
 			\bm{o}
 			\gets
-			\min_{\prec_{N}}
-			\arg\max_{\bm{r}\in R_{\prec}^{N}}
-			\sum_{i=1}^{N}
+			\min_{\prec_{L}}
+			\arg\max_{\bm{r}\in R_{\prec}^{L}}
+			\sum_{i=1}^{L}
 			s(r_{i})
 		}$
 		\State \Return $((o,\mathscr{L}(o))\mid o\in\bm{o})$
@@ -408,10 +417,6 @@ Mean latency was measured using the mean time taken to get an output from giving
 \end{algorithm}
 
 We implemented and deployed our system as a web application.
-We set $N=26$ because, grouping rooms by shared prefix up to terminal numbers,
-the largest group (the group of Think Tank rooms) contains $26$ rooms,
-so showing $26$ results could allow a user to find their room by prefix
-without disambiguating by terminal numbers.
 Our prediction algorithm receives a string as input.
 Firstly, the algorithm normalises the string by
 stripping whitespace,
@@ -420,7 +425,10 @@ lowercasing,
 separating letters from numbers,
 and replacing words with their aliases,
 to make the string more closely match training strings.
-Then, the algorithm computes top-ranked rooms using harmonically-weighted Borda ranking. % Ours still uses constrained decoding
+Then, the algorithm computes top-ranked rooms using a Borda-style ranking.
+We prioritise scorers by assumed error frequency,
+placing prefix-sensitive signals first for more common errors
+and using the trained denoiser for rarer errors.
 Finally, the algorithm looks up the address of each room, returning top-ranked room-address pairs.
 
 \begin{figure}[H]
@@ -432,25 +440,61 @@ Finally, the algorithm looks up the address of each room, returning top-ranked r
 To further improve the user experience,
 we also implemented the following features to make our web application more efficient and responsive.
 \begin{itemize}
-	\item \textbf{Incremental prediction.} We predict during typing rather than waiting for final submission.
 	\item \textbf{Prefix caching.} We KV-cache previously computed prefix states and only process newly appended characters.
+	\item \textbf{Incremental prediction.} We predict during typing rather than waiting for final submission.
 	\item \textbf{Debounced querying.} We introduce a short debounce to avoid redundant intermediate inference on rapid keystrokes.
-	\item \textbf{Redundant-query suppression.} We skip empty, already displayed, and exact-match queries when full recomputation is unnecessary.
 	\item \textbf{Bounded result caching.} We memoise recent solved queries while capping cache growth to prevent performance degradation over time.
+	\item \textbf{Redundant-query suppression.} We skip empty, already displayed, and exact-match queries when full recomputation is unnecessary.
 \end{itemize}
+
+\newpage
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{lll}
+		\toprule
+		\textbf{Off-the-shelf model} & \textbf{Accuracy} & \textbf{Latency} \\
+		\midrule
+		\texttt{sentence-transformers/all-MiniLM-L6-v2} & 15.1 & \textbf{465.8} \\
+		\texttt{sentence-transformers/all-mpnet-base-v2} & 37.0 & 567.3 \\
+		\texttt{BAAI/bge-large-en-v1.5} & \textbf{62.5} & 1719.4 \\
+		\midrule
+		\texttt{TinyLlama/TinyLlama-1.1B-Chat-v1.0} & 23.8 & \textbf{639.8} \\
+		\texttt{meta-llama/Llama-3.2-3B-Instruct} & 47.7 & 1901.2 \\
+		\texttt{Qwen/Qwen2.5-7B-Instruct} & \textbf{70.6} & 3009.8 \\
+		\bottomrule
+	\end{tabular}
+	\caption{Off-the-shelf model evaluation results summary.}
+\end{table}
+
+As a ``sanity check'',
+we evaluated off-the-shelf embedding and language models,
+measuring the accuracy and mean latency of each off-the-shelf model on the test set.
+The language models were queried with the lookup in context,
+and embedding models used top-$L$ retrieval on the lookup.
+We concluded that for our task, their accuracies were too low, and their mean latencies were too high.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.95\linewidth]{sam.png}
+	\includegraphics[width=0.75\linewidth]{sam.png}
 	\caption{SAM.}
 \end{figure}
 
-We further evaluated our system against SAM,
-measuring accuracy on a held-out set of $10$ inputs
-sampled from our test set
-using the Python module \texttt{random}
-with UTF-8 encoding.
-To maximise fairness and reproducibility, we fixed the same seed and hardware as before.
+We also evaluated our system against SAM,
+measuring the accuracy of each system on the test set.
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{ll}
+		\toprule
+		\textbf{System} & \textbf{Top-$L$ Accuracy} \\
+		\midrule
+		SAM & 40.0 \\
+		Ours & \textbf{100.0} \\
+		\bottomrule
+	\end{tabular}
+	\caption{System evaluation results summary.}
+\end{table}
 
 \begin{table}[H]
 	\centering
@@ -507,26 +551,11 @@ To maximise fairness and reproducibility, we fixed the same seed and hardware as
 
 \newpage
 
-Our results suggest that SAM, as a traditional matching-based algorithm,
-can be effective on mildly corrupted inputs with strong lexical overlap---occasionally recovering the exact target---but degrades markedly as noise becomes more severe.
+Our results suggest that SAM can be effective on mildly corrupted inputs with strong lexical overlap---occasionally recovering the exact target---but degrades markedly as noise becomes more severe.
 We conclude that SAM can be robust to limited orthographic variation,
 but can also fail to generalise beyond surface-form similarity.
-
-\begin{table}[H]
-	\centering
-	\begin{tabular}{ll}
-		\toprule
-		\textbf{System} & \textbf{Accuracy} (\%) \\
-		\midrule
-		SAM & 40 \\
-		Ours & \textbf{100} \\
-		\bottomrule
-	\end{tabular}
-	\caption{System evaluation results summary.}
-\end{table}
-
-Our system outperformed SAM, achieving complete recovery.
-We believe these results demonstrate strong promise
+Our system convincingly outperformed SAM, achieving complete recovery.
+Overall, we believe these results demonstrate strong promise
 and provide practical foundations for reliable campus assistance.
 
 \section{Appendix}
