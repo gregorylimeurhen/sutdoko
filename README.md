@@ -3,7 +3,6 @@
 *Denoising language models for room address lookup.*
 
 - **Web application**: [sutd404.vercel.app](https://sutd404.vercel.app).
-- **Training artefacts**: [hf.co/gregorylimeurhen/sutd404](https://hf.co/gregorylimeurhen/sutd404).
 
 ## Setup
 
@@ -29,18 +28,25 @@ Follow these steps if you want to run our experiments locally.
 1. Rename `./experiments/.env.example` to `./experiments/.env`. For example:
 ```bash
 # sutd404 $
-            mv ./experiments/.env.example ./experiments/.env
+            cd experiments
+            mv .env.example .env
 ```
 2. Set `WANDB_API_KEY` in `./experiments/.env` to working [Weights & Biases (W&B)](http://wandb.ai) API key.
 3. Install packages in `./experiments/requirements.txt`. For example:
 ```bash
 # sutd404 $
-            pip install -r ./experiments/requirements.txt
+            cd experiments
+            pip install -r requirements.txt
 ```
-4. Run pipeline. For example:
+4. Install [torch](https://pytorch.org/get-started/locally).
+5. Optionally, configure `./experiments/config.toml`.
+5. Run pipeline. For example:
 ```bash
 # sutd404 $
-            ./experiments/run.sh
+            cd experiments
+            python -B preprocess.py # Preprocessing
+            python -B train.py # Training
+            python -B test.py # Testing
 ```
 
 ## Structure

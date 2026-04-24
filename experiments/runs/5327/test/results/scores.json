@@ -1,0 +1,34 @@
+{
+  "identity": {
+    "accuracy": 0.0,
+    "mean_latency": 7.626141369756725e-07
+  },
+  "longest_common_prefix_length": {
+    "accuracy": 0.2916666666666667,
+    "mean_latency": 4.664445975019286e-05
+  },
+  "longest_common_substring_length": {
+    "accuracy": 0.4722222222222222,
+    "mean_latency": 0.0071511010101487586
+  },
+  "substring_jaccard_similarity": {
+    "accuracy": 0.8925925925925926,
+    "mean_latency": 0.020838160315610435
+  },
+  "whitespace_segment_histogram_intersection": {
+    "accuracy": 0.625,
+    "mean_latency": 9.706052897618738e-05
+  },
+  "character_histogram_intersection": {
+    "accuracy": 0.3712962962962963,
+    "mean_latency": 0.0002952652409914191
+  },
+  "damerau_levenshtein": {
+    "accuracy": 0.7194444444444444,
+    "mean_latency": 0.01687296061351878
+  },
+  "ours": {
+    "accuracy": 0.9731481481481481,
+    "mean_latency": 0.0083527839352394
+  }
+}

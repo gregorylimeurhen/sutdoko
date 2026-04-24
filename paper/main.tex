@@ -281,6 +281,12 @@ We use trie-constrained decoding to efficiently avoid room hallucination.
 Our denoiser is trained using a standard cross-entropy loss and AdamW optimiser.
 A more complete list of hyperparameters can be found in our code repository.
 
+For training and testing, we snapshot essential data and code files for each run into a portably compressed (e.g. ZIP) file for auditability.
+On each epoch, we maintain the latest weights (i.e. the weights for that epoch) and best weights (i.e. the weights for the epoch with lowest validation loss) to ensure resumability for robustness to hardware instability.
+We use early stopping to avoid spending compute after validation loss plateaus.
+We log training losses, validation losses, and gradient norms to monitor fitting progress and stability.
+We also log model answers and scores for convenient analysis.
+
 \begin{definition}[Lookup]
 $$
 	\mathscr{L}:R\to A
